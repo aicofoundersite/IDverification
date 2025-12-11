@@ -6,6 +6,6 @@ Module Program
     Sub Main()
         Application.EnableVisualStyles()
         Application.SetCompatibleTextRenderingDefault(False)
-        Application.Run(New MainForm())
+        Application.Run(New MainDashboard())
     End Sub
 End Module

@@ -1,122 +1,106 @@
-[![Maven Package upon a push](https://github.com/mosip/registration/actions/workflows/push-trigger.yml/badge.svg?branch=master)](https://github.com/mosip/registration/actions/workflows/push-trigger.yml)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?branch=master&project=mosip_registration&metric=alert_status)](https://sonarcloud.io/dashboard?branch=master&id=mosip_registration)
-
-# Registration Processor
+# CrossSetaDeduplicator - ID Verification & Duplicate Detector
 
 ## Overview
-This repository contains source code and design documents for MOSIP Registration Processor which is the server-side module to manage ID lifecycle.  The modules exposes API endpoints.  
+**CrossSetaDeduplicator** is MLX Ventures' submission for the W&R SETA Hackathon. It is a robust, Windows-based VB.NET application designed to handle **Learner Registration**, **Bulk ID Verification**, and **Cross-SETA Duplicate Detection**.
 
-[Overview of Registration Processor](https://docs.mosip.io/1.2.0/modules/registration-processor)
+This lightweight solution uses **SQL Server 2019** and a polished **Windows Forms** interface to demonstrate exact and fuzzy matching algorithms for duplicate prevention.
 
-The front end UI application called Registration Client is available in a separate repo [here](https://github.com/mosip/registration-client)
+---
 
-## Registration stages and pipeline
+## 🚀 Installation & Setup
 
-Staged architecture:
+### Prerequisites
+Before running the application, ensure you have the following installed:
+*   **Operating System:** Windows 10 or Windows 11.
+*   **Database:** SQL Server 2019 (Developer or Express Edition).
+*   **Development Environment:** Visual Studio 2022 (with .NET 6.0 Desktop Development workload).
+*   **Framework:** .NET 6.0 Runtime (if running the compiled binary).
 
-  * Group 1 stages 
-      * [Packet receiver](registration-processor/init/registration-processor-packet-receiver-stage)
-  * Group 2 stages
-      * [Securezone notification](registration-processor/pre-processor/registration-processor-securezone-notification-stage)
-      * [Quality classifier](registration-processor/pre-processor/registration-processor-quality-classifier-stage)
-      * [Message sender]()
-  * Group 3 stages
-      * [ABIS handler](registration-processor/core-processor/registration-processor-abis-handler-stage)
-      * [ABIS middleware ](registration-processor/core-processor/registration-processor-abis-middleware-stage)
-      * [Bio dedupe](registration-processor/core-processor/registration-processor-bio-dedupe-stage)
-      * [Manual adjudication](registration-processor/core-processor/registration-processor-manual-adjudication-stage)
- * Group 4 stages
-      * [Biometric authentication](registration-processor/core-processor/registration-processor-biometric-authentication-stage)
-      * [Demo dedupe](registration-processor/core-processor/registration-processor-demo-dedupe-stage)
- * Group 5 stages
-      * [CMD validator](registration-processor/pre-processor/registration-processor-cmd-validator-stage)
-      * [Operator validator](registration-processor/pre-processor/registration-processor-operator-validator-stage)
-      * [Supervisor validator](registration-processor/pre-processor/registration-processor-supervisor-validator-stage)
-      * [Introducer validator](registration-processor/pre-processor/registration-processor-introducer-validator-stage)
-      * [Packet validator](registration-processor/pre-processor/registration-processor-packet-validator-stage)
- * Group 6 stages
-      * [Packet uploader](registration-processor/pre-processor/registration-processor-packet-uploader-stage)
-      * [Packet classifier](registration-processor/pre-processor/registration-processor-packet-classifier-stage)
-      * Verification
- * Group 7 stages
-      * UIN generator
-      * Biometric extraction
-      * Finalization
-      * Printing
-
-The control and data flow in the stages is controlled by [Workflow engine](registration-processor/workflow-engine/)
-
-Other services:
-  * Packet Server
-  * Registration status service
-  * Notification service
-  * Transaction service
-
-### Registration flows
-An overview of various enrollment scenarious (or flows) is described in [ID Lifecycle Management](https://docs.mosip.io/1.2.0/id-lifecycle-management).  Registration Processor recognises the following flows:
-
-* New 
-* Update
-* Child
-* Correction 
-* Lost 
-* Activate/deactivate
-* Reprint
-
-The stage sequence against each flow refer [here](docs/flows.md)
- 
-## Vertx
-Vertx is a framework for stages. Stages run as Vertx.
-
-## Kafka
-Regprocessor stages are connected with eventbus.  MOSIP supports two types of eventbus: 
- - Vertx Eventbus 
- - Kafka (default) - provides persistence across restarts (more robust), throttling capacity, better debugging 
-
-Kafka offers certain advantages over Vertx eventbus hence it is recommended as the default eventbus mechanism. All events between stages pass through Kafka queues. There is a separate Kafka topic for each stage.
-
-One of the power features is to enable throttling in the pipeline.  See [Throttling](docs/throttling.md)
-
-## Hazelcast 
-Distributed cache - for packetmanager
-
-## Database
-See [DB guide](db_scripts/README.md)
-
-## Registration Packet Structure
-[Packetmanager](https://docs.mosip.io/1.2.0/modules/packet-manager)
-
-## Build & run (for developers)
-The project requires JDK 1.11. 
-1. To build jars:
-    ```
-    $ cd registration
-    $ mvn clean install 
-    ```
-1. To skip JUnit tests and Java Docs:
-    ```
-    $ mvn install -DskipTests=true -Dmaven.javadoc.skip=true
-    ```
-1. To build Docker for a service:
-    ```
-    $ cd <service folder>
-    $ docker build -f Dockerfile
+### Step-by-Step Setup
+1.  **Clone the Repository:**
+    ```bash
+    git clone https://github.com/mlx-ventures/IDverification.git
+    cd IDverification/CrossSetaDeduplicator
     ```
 
-## Deploy
+2.  **Database Configuration:**
+    *   Open **SQL Server Management Studio (SSMS)**.
+    *   Connect to your local SQL Server instance (e.g., `localhost` or `.\SQLEXPRESS`).
+    *   Open the script file: `db/CreateDatabase.sql`.
+    *   Execute the script to create the `CrossSetaDB` database and required tables.
 
-### Registration processor in sandbox
-To deploy Registration Processor services on Kubernetes cluster using Dockers refer to [Sandbox Deployment](https://docs.mosip.io/1.2.0/deployment/sandbox-deployment).
+3.  **Application Configuration:**
+    *   Open the solution file `src/CrossSetaDeduplicator.sln` in **Visual Studio**.
+    *   Navigate to `src/CrossSetaDeduplicator/DataAccess/DatabaseHelper.vb`.
+    *   Verify the `_connectionString` variable matches your SQL Server instance:
+        ```vb
+        Private _connectionString As String = "Server=localhost;Database=CrossSetaDB;Trusted_Connection=True;"
+        ```
 
-## Configuration
-Refer to the [configuration guide](docs/configuration.md).
+---
 
-## Test
-Automated functional tests available in [Functional Tests repo](https://github.com/mosip/mosip-functional-tests)
+## 💻 Execution Instructions
 
-## APIs
-API documentation is available [here](https://docs.mosip.io/1.2.0/api)
+### Running in Development Mode (Visual Studio)
+1.  Open Visual Studio.
+2.  Set `CrossSetaDeduplicator` as the **Startup Project**.
+3.  Press **F5** or click **Start** to build and launch the application.
+4.  The **Main Dashboard** should appear.
 
-## License
-This project is licensed under the terms of [Mozilla Public License 2.0](LICENSE).
+### Application Launch
+Upon successful launch, you will see the **Main Dashboard** with:
+*   **Sidebar Navigation:** Buttons for "New Learner Check", "Bulk Upload", and "Exit".
+*   **Live Metrics:** Real-time counters for "Total Checks" and "Duplicates Found".
+*   **Activity Log:** A scrolling log at the bottom showing system events.
 
+---
+
+## 📖 Application Behavior & Features
+
+### 1. Dashboard & Demo Mode
+*   **Live Demo Mode:** Toggle the checkbox in the bottom-left corner. This enables a guided narrative for judges, utilizing tooltips to explain the process.
+*   **Seed Data:** Click the hidden/small "Seed Data" button in the top-right of the metrics panel to instantly populate the database with **50 sample records**, including known duplicates for testing.
+
+### 2. New Learner Registration (Wizard)
+Access via **"New Learner Check"**. A 3-step wizard guides you:
+*   **Step 1: Identity Verification:** Enter a National ID. The system simulates a connection to Home Affairs (KYC).
+    *   *Try ID ending in `999` for "Expired Document".*
+    *   *Try ID `9505055000081` (Thabo Molefe) for a successful verification.*
+*   **Step 2: Details:** Enter Name, Surname, DOB. (Auto-filled in Demo Mode).
+*   **Step 3: Deduplication:** The system checks against the SQL database.
+    *   **Green:** No duplicates found.
+    *   **Red:** Duplicate detected (Exact ID match).
+    *   **Orange:** Potential duplicate (Fuzzy name match).
+
+### 3. Bulk ID Verification (Case 1)
+Access via **"Bulk Upload"**.
+*   **Browse:** Select the provided `SampleData.csv` file.
+*   **Preview:** View the raw data in the grid.
+*   **Process Batch:** Click to run the engine. Watch as rows color-code in real-time:
+    *   🟢 **Green:** Verified.
+    *   🔴 **Red:** Duplicate Found.
+    *   🟠 **Orange:** KYC Failed / Invalid.
+*   **Download Report:** Export the final results to a new CSV file.
+
+---
+
+## 🛠 Troubleshooting
+
+*   **"Connection Refused" / SQL Error:**
+    *   Ensure SQL Server is running.
+    *   Check that the `CrossSetaDB` database exists.
+    *   Verify the connection string in `DatabaseHelper.vb` matches your server name.
+
+*   **Application Crashes on Start:**
+    *   Ensure .NET 6.0 Runtime is installed.
+    *   Run Visual Studio as Administrator if you encounter permission issues.
+
+---
+
+## 📝 Contact & Contribution
+
+*   **Submission By:** Team MLX Ventures
+*   **Event:** W&R SETA Hackathon
+*   **Repository:** [GitHub Link]
+
+For issues or questions, please open a GitHub Issue or contact the team lead.
