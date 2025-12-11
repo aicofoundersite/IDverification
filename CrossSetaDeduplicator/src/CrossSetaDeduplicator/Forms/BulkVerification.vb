@@ -64,6 +64,7 @@ Public Class BulkVerification
         dt.Columns.Add("NationalID")
         dt.Columns.Add("FirstName")
         dt.Columns.Add("LastName")
+        dt.Columns.Add("Role")
         dt.Columns.Add("KYC_Status")
         dt.Columns.Add("Dedupe_Status")
         dt.Columns.Add("Final_Result")
@@ -75,7 +76,9 @@ Public Class BulkVerification
         For i As Integer = startIdx To lines.Length - 1
             Dim parts = lines(i).Split(","c)
             If parts.Length >= 3 Then
-                dt.Rows.Add(parts(0).Trim(), parts(1).Trim(), parts(2).Trim(), "Pending", "Pending", "Pending")
+                ' Default role to Learner if not provided in CSV
+                Dim role = If(parts.Length > 3, parts(3).Trim(), "Learner")
+                dt.Rows.Add(parts(0).Trim(), parts(1).Trim(), parts(2).Trim(), role, "Pending", "Pending", "Pending")
             End If
         Next
         dgvData.DataSource = dt
@@ -92,6 +95,7 @@ Public Class BulkVerification
             Dim id = row("NationalID").ToString()
             Dim fname = row("FirstName").ToString()
             Dim lname = row("LastName").ToString()
+            Dim role = row("Role").ToString()
 
             ' 1. KYC Check
             Dim kycRes = _demoMode.SimulateKYC(id)
@@ -99,7 +103,7 @@ Public Class BulkVerification
 
             ' 2. Dedupe Check
             Dim learner As New LearnerModel() With {
-                .NationalID = id, .FirstName = fname, .LastName = lname
+                .NationalID = id, .FirstName = fname, .LastName = lname, .Role = role
             }
             Dim dedupRes = _dedupService.CheckForDuplicates(learner)
             
@@ -145,11 +149,11 @@ Public Class BulkVerification
             sfd.FileName = "VerificationReport.csv"
             If sfd.ShowDialog() = DialogResult.OK Then
                 Dim sb As New Text.StringBuilder()
-                sb.AppendLine("NationalID,FirstName,LastName,KYC_Status,Dedupe_Status,Final_Result")
+                sb.AppendLine("NationalID,FirstName,LastName,Role,KYC_Status,Dedupe_Status,Final_Result")
                 
                 For Each row As DataGridViewRow In dgvData.Rows
                      Dim cells = row.Cells
-                     sb.AppendLine($"{cells(0).Value},{cells(1).Value},{cells(2).Value},{cells(3).Value},{cells(4).Value},{cells(5).Value}")
+                     sb.AppendLine($"{cells(0).Value},{cells(1).Value},{cells(2).Value},{cells(3).Value},{cells(4).Value},{cells(5).Value},{cells(6).Value}")
                 Next
                 
                 File.WriteAllText(sfd.FileName, sb.ToString())

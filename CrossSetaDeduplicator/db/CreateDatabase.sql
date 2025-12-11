@@ -14,6 +14,7 @@ CREATE TABLE Learners (
     LastName NVARCHAR(100) NOT NULL,
     DateOfBirth DATE NOT NULL,
     Gender NVARCHAR(20),
+    Role NVARCHAR(50) DEFAULT 'Learner', -- Learner, Assessor, Moderator
     BiometricHash NVARCHAR(MAX), -- Placeholder for biometric data hash
     RegistrationDate DATETIME DEFAULT GETDATE(),
     IsVerified BIT DEFAULT 0 -- Status of KYC verification

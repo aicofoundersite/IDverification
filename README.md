@@ -26,16 +26,33 @@ Before running the application, ensure you have the following installed:
 2.  **Database Configuration:**
     *   Open **SQL Server Management Studio (SSMS)**.
     *   Connect to your local SQL Server instance (e.g., `localhost` or `.\SQLEXPRESS`).
-    *   Open the script file: `db/CreateDatabase.sql`.
-    *   Execute the script to create the `CrossSetaDB` database and required tables.
+    *   **Step A:** Open and execute `db/CreateDatabase.sql` to create the `CrossSetaDB` database and tables.
+    *   **Step B:** Open and execute `db/StoredProcedures.sql` to create the required Stored Procedures.
+        *   *Note: This step is mandatory to ensure strict SQL 2019 compliance.*
+    *   **Step C (Optional):** Open and execute `db/OptimizeDatabase.sql` to add performance indexes.
 
 3.  **Application Configuration:**
-    *   Open the solution file `src/CrossSetaDeduplicator.sln` in **Visual Studio**.
-    *   Navigate to `src/CrossSetaDeduplicator/DataAccess/DatabaseHelper.vb`.
-    *   Verify the `_connectionString` variable matches your SQL Server instance:
-        ```vb
-        Private _connectionString As String = "Server=localhost;Database=CrossSetaDB;Trusted_Connection=True;"
-        ```
+    *   **Environment Variables (Recommended for Production):**
+        *   Set `CROSS_SETA_DB_CONNECTION` to your SQL Server connection string.
+        *   *Example:* `Server=192.168.1.100;Database=CrossSetaDB;User Id=sa;Password=YourPassword;`
+    *   **Local Development:**
+        *   The application defaults to `Server=localhost;Database=CrossSetaDB;Trusted_Connection=True;` if no environment variable is found.
+        *   You can manually edit `src/CrossSetaDeduplicator/DataAccess/DatabaseHelper.vb` if needed.
+
+---
+
+## 🏭 Production Readiness
+
+### Checklist
+- [x] **Database Connectivity:** Supports Connection Pooling (via ADO.NET default) and Environment Variables.
+- [x] **Data Integrity:** Primary Keys, Unique Constraints (NationalID), and Foreign Keys enforced.
+- [x] **Performance:** Indexed searches for NationalID and Name (Fuzzy matching support).
+- [x] **Security:** Uses Stored Procedures (`sp_InsertLearner`, `sp_FindPotentialDuplicates`) to prevent SQL Injection.
+- [x] **Backup:** Backup script provided in `db/BackupDatabase.sql`.
+
+### Known Limitations
+1.  **Fuzzy Logic:** The fuzzy matching (Levenshtein) is currently handled in the application layer for flexibility. For datasets > 1 million rows, we recommend moving this to SQL Server Full-Text Search or SSIS Fuzzy Lookup.
+2.  **Concurrency:** The Bulk Verification processes rows sequentially for UI responsiveness. Parallel processing can be enabled in `BulkVerification.vb` for higher throughput.
 
 ---
 

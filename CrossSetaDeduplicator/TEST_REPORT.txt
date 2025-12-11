@@ -1,0 +1,42 @@
+CrossSetaDeduplicator - Test Report
+=====================================
+
+Overview
+--------
+This document outlines the testing strategy and verification steps performed to ensure the solution meets the W&RSETA Hackathon requirements.
+
+Requirements Verified
+---------------------
+1.  **ID Verification at Registration (Learner, Assessor, Moderator)**
+    - **Status:** PASSED (Simulated)
+    - **Implementation:** The `LearnerModel` and `Learners` database table were updated to include a `Role` field (Learner, Assessor, Moderator).
+    - **Verification:** The `TestHarness` successfully simulates registering users with different roles. The `RegistrationWizard` UI now includes a dropdown to select the role during registration.
+
+2.  **Batch or Bulk ID Verification**
+    - **Status:** PASSED (Simulated)
+    - **Implementation:** The `BulkVerification` module parses CSV files. It was updated to optionally accept a `Role` column in the CSV. If missing, it defaults to "Learner".
+    - **Verification:** The `TestHarness` runs a bulk processing simulation, correctly identifying duplicates within the batch against the database.
+
+3.  **Detect Duplicate Learners Across SETAs**
+    - **Status:** PASSED (Simulated)
+    - **Implementation:** The `DeduplicationService` performs checks primarily on `NationalID` and `Name`.
+    - **Logic:** If an Assessor tries to register with a National ID that already exists for a Learner (or vice versa), the system flags it as a "Duplicate". This fulfills the requirement to detect if the *same individual* is appearing in multiple contexts or trying to re-register fraudulently.
+    - **Verification:** The `TestHarness` specifically tests this by registering a "Learner" and then attempting to register an "Assessor" with the same ID, confirming the duplicate is caught.
+
+Test Harness
+------------
+A dedicated console application (`TestHarness`) has been added to the solution to run these logic tests programmatically without needing the Windows Forms UI.
+
+**How to Run the Test Harness:**
+1.  Open `src/CrossSetaDeduplicator.sln` in Visual Studio.
+2.  Right-click the `TestHarness` project in Solution Explorer.
+3.  Select "Set as Startup Project".
+4.  Press F5.
+5.  Ensure the SQL Server database is running (or review the console output for expected logic flow even if DB fails).
+
+Code Changes Summary
+--------------------
+- **SQL:** Added `Role` column to `Learners` table.
+- **Model:** Added `Role` property to `LearnerModel.vb`.
+- **UI:** Added Role selection to `RegistrationWizard.vb`.
+- **Bulk:** Enhanced CSV parsing to support roles.

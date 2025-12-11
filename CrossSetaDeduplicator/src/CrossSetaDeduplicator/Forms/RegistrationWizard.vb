@@ -27,6 +27,7 @@ Public Class RegistrationWizard
     Private txtLastName As TextBox
     Private dtpDOB As DateTimePicker
     Private cmbGender As ComboBox
+    Private cmbRole As ComboBox
     Private btnNext2 As Button
     Private btnBack2 As Button
 
@@ -117,10 +118,15 @@ Public Class RegistrationWizard
         cmbGender = New ComboBox() With {.Location = New Point(150, 220), .Width = 200}
         cmbGender.Items.AddRange({"Male", "Female", "Other"})
 
+        Dim lblRole As New Label() With {.Text = "Role:", .Location = New Point(20, 260)}
+        cmbRole = New ComboBox() With {.Location = New Point(150, 260), .Width = 200}
+        cmbRole.Items.AddRange({"Learner", "Assessor", "Moderator"})
+        cmbRole.SelectedIndex = 0
+
         btnBack2 = New Button() With {.Text = "< Back", .Location = New Point(20, 400)}
         btnNext2 = New Button() With {.Text = "Check Duplicates >", .Location = New Point(420, 400), .Width = 140}
 
-        pnlStep2.Controls.AddRange({lblTitle2, lblFn, txtFirstName, lblLn, txtLastName, lblDob, dtpDOB, lblGen, cmbGender, btnBack2, btnNext2})
+        pnlStep2.Controls.AddRange({lblTitle2, lblFn, txtFirstName, lblLn, txtLastName, lblDob, dtpDOB, lblGen, cmbGender, lblRole, cmbRole, btnBack2, btnNext2})
         Me.Controls.Add(pnlStep2)
 
         ' --- Step 3 Panel ---
@@ -187,6 +193,7 @@ Public Class RegistrationWizard
         _learner.LastName = txtLastName.Text
         _learner.DateOfBirth = dtpDOB.Value
         _learner.Gender = If(cmbGender.SelectedItem IsNot Nothing, cmbGender.SelectedItem.ToString(), "")
+        _learner.Role = If(cmbRole.SelectedItem IsNot Nothing, cmbRole.SelectedItem.ToString(), "Learner")
         _learner.IsVerified = True
 
         Dim result = _dedupService.CheckForDuplicates(_learner)

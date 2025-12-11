@@ -4,20 +4,35 @@ Imports CrossSetaDeduplicator.Models
 Public Class DatabaseHelper
     Private _connectionString As String = "Server=localhost;Database=CrossSetaDB;Trusted_Connection=True;"
 
-    Public Sub New(connectionString As String)
+    Public Sub New(Optional connectionString As String = Nothing)
+        ' Priority 1: Constructor Argument
         If Not String.IsNullOrEmpty(connectionString) Then
             _connectionString = connectionString
+            Return
         End If
+
+        ' Priority 2: Environment Variable (Production/Docker)
+        Dim envConn As String = Environment.GetEnvironmentVariable("CROSS_SETA_DB_CONNECTION")
+        If Not String.IsNullOrEmpty(envConn) Then
+            _connectionString = envConn
+            Return
+        End If
+
+        ' Priority 3: Default Localhost (Dev)
+        ' _connectionString is already set to default
     End Sub
 
     Public Sub InsertLearner(learner As LearnerModel)
         Using conn As New SqlConnection(_connectionString)
-            Dim cmd As New SqlCommand("INSERT INTO Learners (NationalID, FirstName, LastName, DateOfBirth, Gender, BiometricHash, IsVerified) VALUES (@NationalID, @FirstName, @LastName, @DateOfBirth, @Gender, @BiometricHash, @IsVerified)", conn)
+            Dim cmd As New SqlCommand("sp_InsertLearner", conn)
+            cmd.CommandType = CommandType.StoredProcedure
+            
             cmd.Parameters.AddWithValue("@NationalID", learner.NationalID)
             cmd.Parameters.AddWithValue("@FirstName", learner.FirstName)
             cmd.Parameters.AddWithValue("@LastName", learner.LastName)
             cmd.Parameters.AddWithValue("@DateOfBirth", learner.DateOfBirth)
             cmd.Parameters.AddWithValue("@Gender", If(learner.Gender, DBNull.Value))
+            cmd.Parameters.AddWithValue("@Role", If(learner.Role, "Learner"))
             cmd.Parameters.AddWithValue("@BiometricHash", If(learner.BiometricHash, DBNull.Value))
             cmd.Parameters.AddWithValue("@IsVerified", learner.IsVerified)
 
@@ -30,11 +45,9 @@ Public Class DatabaseHelper
         Dim potentialDuplicates As New List(Of LearnerModel)
 
         Using conn As New SqlConnection(_connectionString)
-            ' Basic query to fetch records that might match.
-            ' In a real scenario, we might use Full Text Search or fetch a broader set for in-memory fuzzy matching if dataset is small.
-            ' For this prototype, we fetch by NationalID OR (FirstName AND LastName) to cover both exact and potential name matches.
-            Dim query As String = "SELECT * FROM Learners WHERE NationalID = @NationalID OR (FirstName = @FirstName AND LastName = @LastName)"
-            Dim cmd As New SqlCommand(query, conn)
+            Dim cmd As New SqlCommand("sp_FindPotentialDuplicates", conn)
+            cmd.CommandType = CommandType.StoredProcedure
+
             cmd.Parameters.AddWithValue("@NationalID", nationalId)
             cmd.Parameters.AddWithValue("@FirstName", firstName)
             cmd.Parameters.AddWithValue("@LastName", lastName)
@@ -49,6 +62,7 @@ Public Class DatabaseHelper
                     learner.LastName = reader("LastName").ToString()
                     learner.DateOfBirth = Convert.ToDateTime(reader("DateOfBirth"))
                     learner.Gender = If(IsDBNull(reader("Gender")), Nothing, reader("Gender").ToString())
+                    learner.Role = If(IsDBNull(reader("Role")), "Learner", reader("Role").ToString())
                     learner.BiometricHash = If(IsDBNull(reader("BiometricHash")), Nothing, reader("BiometricHash").ToString())
                     learner.IsVerified = Convert.ToBoolean(reader("IsVerified"))
                     potentialDuplicates.Add(learner)
@@ -76,6 +90,7 @@ Public Class DatabaseHelper
                     learner.LastName = reader("LastName").ToString()
                     learner.DateOfBirth = Convert.ToDateTime(reader("DateOfBirth"))
                     learner.Gender = If(IsDBNull(reader("Gender")), Nothing, reader("Gender").ToString())
+                    learner.Role = If(IsDBNull(reader("Role")), "Learner", reader("Role").ToString())
                     learner.BiometricHash = If(IsDBNull(reader("BiometricHash")), Nothing, reader("BiometricHash").ToString())
                     learner.IsVerified = Convert.ToBoolean(reader("IsVerified"))
                     learners.Add(learner)
