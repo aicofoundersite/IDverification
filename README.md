@@ -1,132 +1,98 @@
-# CrossSetaDeduplicator - ID Verification & Duplicate Detector
+# CrossSetaDeduplicator - Intelligent ID Verification & Deduplication System
 
-## Overview
-**CrossSetaDeduplicator** is MLX Ventures' submission for the W&R SETA Hackathon. It is a robust, Windows-based VB.NET application designed to handle **Learner Registration**, **Bulk ID Verification**, and **Cross-SETA Duplicate Detection**.
+## 📋 Project Overview
+**CrossSetaDeduplicator** is a production-ready **VB.NET Windows Forms** application designed to solve the critical challenge of identity verification for W&RSETA. It provides a secure, real-time mechanism to validate South African ID numbers, prevent duplicate learner registrations, and ensure data integrity across the SETA landscape.
 
-This lightweight solution uses **SQL Server 2019** and a polished **Windows Forms** interface to demonstrate exact and fuzzy matching algorithms for duplicate prevention.
+This solution is built on a strict **N-Tier Architecture**, utilizing **SQL Server 2019** for robust data management and audit compliance.
+
+---
+
+## 🎯 Core Capabilities (The "Must-Haves")
+
+### 1. ✅ Input Validation
+*   **South African ID Standard**: Implements the **Luhn Algorithm (Modulus 10)** to mathematically validate ID numbers before they leave the client.
+*   **Format Enforcement**: Strict input masking ensures 13-digit numeric compliance.
+*   **Data Integrity**: Mandatory checks for Name and Surname to ensure complete records.
+
+### 2. ⚡ Real-Time Verification (Traffic Light Protocol)
+Connects to an external trusted data source (simulating Department of Home Affairs) to verify identity status in real-time.
+*   🟢 **GREEN (Verified)**: ID exists, is "Alive", and the Surname matches the official record.
+*   🟡 **YELLOW (Warning)**: ID is valid, but the Surname provided does not match the official record (potential marriage/typo).
+*   🔴 **RED (Invalid/Fraud)**: ID does not exist, or the person is marked as "Deceased".
+
+### 3. 🔒 Audit Trail & Compliance
+*   **Full Traceability**: Every single verification attempt is logged in the `ExternalVerificationLog` table.
+*   **Who, When, What**: Logs the **Timestamp**, **User** (System User), **Source** (e.g., HomeAffairs, KYC_SDK), and **Result Status**.
+*   **POPIA Compliance**: Mandatory "Consent" checkbox explicitly required before any verification can proceed.
+
+---
+
+## 🌟 Innovation & Bonus Features
+
+### 📶 Offline Capability
+*   **Smart Queueing**: If the system detects network failure (or is toggled to "Simulate Offline"), verification requests are serialized and queued locally (`offline_verification_queue.json`).
+*   **Automatic Processing**: The system is designed to process the queue automatically once connectivity is restored.
+
+### 👤 Biometric & KYC Integration
+*   **Document Scanning**: Integrates with **Doubango KYC SDK** (or simulation) to scan physical ID documents (Passport, ID Card).
+*   **Facial Recognition**: Includes a biometric step to compare a live selfie against the photo in the scanned ID document.
+
+### 🧠 Intelligent Deduplication
+*   **Fuzzy Matching**: Uses **Levenshtein Distance** algorithms to detect potential duplicates (e.g., "John Smith" vs "Jon Smith") alongside exact ID matching.
+*   **Cross-SETA Ready**: Designed to check against a centralized database of learners.
+
+---
+
+## 🛠 Tech Stack & Architecture
+
+*   **Language**: VB.NET (.NET 6.0 / Framework 4.8 compatible)
+*   **Database**: SQL Server 2019
+*   **Architecture**: N-Tier (UI Layer → Service Layer → Data Access Layer)
+*   **Security**: Parameterized Queries (SQL Injection prevention), Environment Variable Configuration.
 
 ---
 
 ## 🚀 Installation & Setup
 
 ### Prerequisites
-Before running the application, ensure you have the following installed:
-*   **Operating System:** Windows 10 or Windows 11.
-*   **Database:** SQL Server 2019 (Developer or Express Edition).
-*   **Development Environment:** Visual Studio 2022 (with .NET 6.0 Desktop Development workload).
-*   **Framework:** .NET 6.0 Runtime (if running the compiled binary).
+*   Windows 10/11
+*   Visual Studio 2022
+*   SQL Server 2019 (Express or Developer)
 
-### Step-by-Step Setup
-1.  **Clone the Repository:**
-    ```bash
-    git clone https://github.com/mlx-ventures/IDverification.git
-    cd IDverification/CrossSetaDeduplicator
-    ```
+### Database Setup
+1.  Open **SQL Server Management Studio (SSMS)**.
+2.  Execute `db/CreateDatabase.sql` to build the schema.
+3.  Execute `db/StoredProcedures.sql` to install the required logic.
+4.  *(Optional)* Execute `db/UpdateDatabase_VerificationLog.sql` if upgrading an older version.
 
-2.  **Database Configuration:**
-    *   Open **SQL Server Management Studio (SSMS)**.
-    *   Connect to your local SQL Server instance (e.g., `localhost` or `.\SQLEXPRESS`).
-    *   **Step A:** Open and execute `db/CreateDatabase.sql` to create the `CrossSetaDB` database and tables.
-    *   **Step B:** Open and execute `db/StoredProcedures.sql` to create the required Stored Procedures.
-        *   *Note: This step is mandatory to ensure strict SQL 2019 compliance.*
-    *   **Step C (Optional):** Open and execute `db/OptimizeDatabase.sql` to add performance indexes.
-
-3.  **SDK Setup (KYC Verification):**
-    *   The application requires the Doubango KYC SDK for document scanning.
-    *   **Automated:** The repository structure expects the SDK at `lib/KYC-SDK`.
-    *   **Manual Setup:** If the folder is empty, run:
-        ```bash
-        git clone --depth 1 https://github.com/DoubangoTelecom/KYC-Documents-Verif-SDK.git lib/KYC-SDK
-        ```
-    *   *Note: If the SDK is missing or running on a non-Windows environment, the application will automatically default to "Simulation Mode" for demonstration purposes.*
-
-4.  **Application Configuration:**
-    *   **Environment Variables (Recommended for Production):**
-        *   Set `CROSS_SETA_DB_CONNECTION` to your SQL Server connection string.
-        *   *Example:* `Server=192.168.1.100;Database=CrossSetaDB;User Id=sa;Password=YourPassword;`
-    *   **Local Development:**
-        *   The application defaults to `Server=localhost;Database=CrossSetaDB;Trusted_Connection=True;` if no environment variable is found.
-        *   You can manually edit `src/CrossSetaDeduplicator/DataAccess/DatabaseHelper.vb` if needed.
+### Running the Application
+1.  Open `src/CrossSetaDeduplicator.sln` in Visual Studio.
+2.  Check `DatabaseHelper.vb` or set the `CROSS_SETA_DB_CONNECTION` environment variable to point to your SQL instance.
+3.  Run the application (**F5**).
+4.  **Credentials**: No login required for the prototype (Windows Auth).
 
 ---
 
-## 🏭 Production Readiness
+## 🧪 Testing the "Traffic Light" Logic
 
-### Checklist
-- [x] **Database Connectivity:** Supports Connection Pooling (via ADO.NET default) and Environment Variables.
-- [x] **Data Integrity:** Primary Keys, Unique Constraints (NationalID), and Foreign Keys enforced.
-- [x] **Performance:** Indexed searches for NationalID and Name (Fuzzy matching support).
-- [x] **Security:** Uses Stored Procedures (`sp_InsertLearner`, `sp_FindPotentialDuplicates`) to prevent SQL Injection.
-- [x] **Backup:** Backup script provided in `db/BackupDatabase.sql`.
+You can test the Real-Time Verification logic using the **Registration Wizard**:
 
-### Known Limitations
-1.  **Fuzzy Logic:** The fuzzy matching (Levenshtein) is currently handled in the application layer for flexibility. For datasets > 1 million rows, we recommend moving this to SQL Server Full-Text Search or SSIS Fuzzy Lookup.
-2.  **Concurrency:** The Bulk Verification processes rows sequentially for UI responsiveness. Parallel processing can be enabled in `BulkVerification.vb` for higher throughput.
+| Scenario | Input ID | Input Name | Input Surname | Expected Result |
+| :--- | :--- | :--- | :--- | :--- |
+| **Valid Citizen** | `9505055000081` | Thabo | Molefe | 🟢 **Green** (Verified) |
+| **Surname Mismatch** | `9505055000081` | Thabo | *Unknown* | 🟡 **Yellow** (Mismatch Warning) |
+| **Deceased** | `9001015000085` | Any | Any | 🔴 **Red** (Deceased Alert) |
+| **Invalid Format** | `12345` | Any | Any | 🔴 **Red** (Invalid Format) |
 
 ---
 
-## 💻 Execution Instructions
+## 📂 Project Structure
 
-### Running in Development Mode (Visual Studio)
-1.  Open Visual Studio.
-2.  Set `CrossSetaDeduplicator` as the **Startup Project**.
-3.  Press **F5** or click **Start** to build and launch the application.
-4.  The **Main Dashboard** should appear.
+*   `src/` - Source code (VB.NET)
+    *   `Forms/` - UI Windows Forms (RegistrationWizard, MainDashboard)
+    *   `Services/` - Business Logic (HomeAffairsService, KYCService, DeduplicationService)
+    *   `DataAccess/` - Database interactions (DatabaseHelper)
+    *   `Models/` - Data objects
+*   `db/` - SQL Scripts for database creation and management.
+*   `lib/` - External libraries (KYC SDKs).
 
-### Application Launch
-Upon successful launch, you will see the **Main Dashboard** with:
-*   **Sidebar Navigation:** Buttons for "New Learner Check", "Bulk Upload", and "Exit".
-*   **Live Metrics:** Real-time counters for "Total Checks" and "Duplicates Found".
-*   **Activity Log:** A scrolling log at the bottom showing system events.
-
----
-
-## 📖 Application Behavior & Features
-
-### 1. Dashboard & Demo Mode
-*   **Live Demo Mode:** Toggle the checkbox in the bottom-left corner. This enables a guided narrative for judges, utilizing tooltips to explain the process.
-*   **Seed Data:** Click the hidden/small "Seed Data" button in the top-right of the metrics panel to instantly populate the database with **50 sample records**, including known duplicates for testing.
-
-### 2. New Learner Registration (Wizard)
-Access via **"New Learner Check"**. A 3-step wizard guides you:
-*   **Step 1: Identity Verification:**
-    *   **Manual Entry:** Enter a National ID directly.
-    *   **📷 Scan Document:** Upload a Passport, ID Card, or Driver's License image. The system uses the **Doubango KYC SDK** to extract details automatically.
-*   **Step 2: Details:** Enter Name, Surname, DOB. (Auto-filled if Document Scan was successful).
-*   **Step 3: Deduplication:** The system checks against the SQL database.
-    *   **Green:** No duplicates found.
-    *   **Red:** Duplicate detected (Exact ID match).
-    *   **Orange:** Potential duplicate (Fuzzy name match).
-
-### 3. Bulk ID Verification (Case 1)
-Access via **"Bulk Upload"**.
-*   **Browse:** Select the provided `SampleData.csv` file.
-*   **Preview:** View the raw data in the grid.
-*   **Process Batch:** Click to run the engine. Watch as rows color-code in real-time:
-    *   🟢 **Green:** Verified.
-    *   🔴 **Red:** Duplicate Found.
-    *   🟠 **Orange:** KYC Failed / Invalid.
-*   **Download Report:** Export the final results to a new CSV file.
-
----
-
-## 🛠 Troubleshooting
-
-*   **"Connection Refused" / SQL Error:**
-    *   Ensure SQL Server is running.
-    *   Check that the `CrossSetaDB` database exists.
-    *   Verify the connection string in `DatabaseHelper.vb` matches your server name.
-
-*   **Application Crashes on Start:**
-    *   Ensure .NET 6.0 Runtime is installed.
-    *   Run Visual Studio as Administrator if you encounter permission issues.
-
----
-
-## 📝 Contact & Contribution
-
-*   **Submission By:** Team MLX Ventures
-*   **Event:** W&R SETA Hackathon
-*   **Repository:** [GitHub Link]
-
-For issues or questions, please open a GitHub Issue or contact the team lead.

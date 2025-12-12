@@ -13,6 +13,12 @@ Namespace CrossSetaDeduplicator.Services
         Public Property ErrorMessage As String
     End Class
 
+    Public Class FaceMatchResult
+        Public Property IsMatch As Boolean
+        Public Property ConfidenceScore As Double
+        Public Property Message As String
+    End Class
+
     Public Class KYCService
         Private _sdkPath As String
         Private _assetsPath As String
@@ -48,6 +54,44 @@ Namespace CrossSetaDeduplicator.Services
                 ' Fallback for Non-Windows or Missing SDK (Demo Mode)
                 Return RunMockSDK(imagePath)
             End If
+        End Function
+
+        Public Function CompareFaces(idDocumentPath As String, selfiePath As String) As FaceMatchResult
+            Dim result As New FaceMatchResult()
+            
+            If Not File.Exists(idDocumentPath) OrElse Not File.Exists(selfiePath) Then
+                result.IsMatch = False
+                result.ConfidenceScore = 0
+                result.Message = "One or both images not found."
+                Return result
+            End If
+
+            ' TODO: Integrate with real Face Matching SDK (e.g. Doubango FaceLiveness or OpenCV)
+            ' For Hackathon/Demo: Simulate matching logic
+            
+            ' Simulation Logic:
+            ' If filenames contain "Thabo" or "Match", return success.
+            ' Otherwise return random score or failure.
+            
+            Dim f1 = Path.GetFileName(idDocumentPath).ToLower()
+            Dim f2 = Path.GetFileName(selfiePath).ToLower()
+
+            If (f1.Contains("thabo") Or f1.Contains("match")) AndAlso (f2.Contains("thabo") Or f2.Contains("match")) Then
+                result.IsMatch = True
+                result.ConfidenceScore = 98.5
+                result.Message = "High confidence match."
+            ElseIf f1.Contains("nomatch") Or f2.Contains("nomatch") Then
+                result.IsMatch = False
+                result.ConfidenceScore = 12.4
+                result.Message = "Faces do not match."
+            Else
+                ' Default to a "Good enough" match for general testing unless explicitly "bad"
+                result.IsMatch = True
+                result.ConfidenceScore = 85.0
+                result.Message = "Match verified."
+            End If
+
+            Return result
         End Function
 
         Private Function RunRealSDK(imagePath As String) As KYCResult

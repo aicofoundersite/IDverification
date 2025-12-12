@@ -117,4 +117,21 @@ Public Class DatabaseHelper
             cmd.ExecuteNonQuery()
         End Using
     End Sub
+
+    Public Sub LogExternalVerification(nationalId As String, source As String, status As String, details As String, startTime As DateTime, Optional performedBy As String = "System")
+        Using conn As New SqlConnection(_connectionString)
+            Dim cmd As New SqlCommand("INSERT INTO ExternalVerificationLog (NationalID, VerificationSource, Status, Details, RequestTimestamp, ResponseTimestamp, PerformedBy) VALUES (@NationalID, @VerificationSource, @Status, @Details, @RequestTimestamp, @ResponseTimestamp, @PerformedBy)", conn)
+            
+            cmd.Parameters.AddWithValue("@NationalID", nationalId)
+            cmd.Parameters.AddWithValue("@VerificationSource", source)
+            cmd.Parameters.AddWithValue("@Status", status)
+            cmd.Parameters.AddWithValue("@Details", details)
+            cmd.Parameters.AddWithValue("@RequestTimestamp", startTime)
+            cmd.Parameters.AddWithValue("@ResponseTimestamp", DateTime.Now)
+            cmd.Parameters.AddWithValue("@PerformedBy", performedBy)
+
+            conn.Open()
+            cmd.ExecuteNonQuery()
+        End Using
+    End Sub
 End Class
