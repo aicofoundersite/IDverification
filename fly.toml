@@ -1,0 +1,23 @@
+app = 'cross-seta-db-17655'
+primary_region = 'jnb'
+
+[build]
+  dockerfile = 'docker/mssql/Dockerfile'
+
+[mounts]
+  source = "mssql_data"
+  destination = "/var/opt/mssql"
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 1433
+  processes = ["app"]
+
+  [[services.ports]]
+    port = 1433
+    handlers = []
+
+[[vm]]
+  memory = '2gb'
+  cpu_kind = 'shared'
+  cpus = 1

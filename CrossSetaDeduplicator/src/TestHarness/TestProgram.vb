@@ -104,5 +104,28 @@ Module TestProgram
         Console.WriteLine("Test Complete.")
         Console.WriteLine("Press Enter to exit.")
         Console.ReadLine()
+        ' Scenario 4: Home Affairs Verification (Google Sheet)
+        Console.WriteLine(vbCrLf & "[TEST 4] Testing Home Affairs Verification (Google Sheet Source)")
+        Dim haService As New HomeAffairsService()
+        Dim testId As String = "0002080806082" ' Sichumile Makaula from Sheet
+        
+        Console.WriteLine($"Verifying ID {testId} (Should be ALIVE/VERIFIED)...")
+        Try
+            Dim result = haService.VerifyCitizenAsync(testId, "Sichumile", "Makaula").GetAwaiter().GetResult()
+            Console.WriteLine($"   -> Result: {result.Status}")
+            Console.WriteLine($"   -> Message: {result.Message}")
+            
+            If result.Status = "Verified" Or result.Status = "Alive" Then
+                Console.WriteLine("   -> SUCCESS: Verified against Google Sheet.")
+            Else
+                Console.WriteLine("   -> FAILURE: Failed to verify against Google Sheet.")
+            End If
+            
+        Catch ex As Exception
+            Console.WriteLine($"   -> Error: {ex.Message}")
+        End Try
+
+        Console.WriteLine(vbCrLf & "Tests Completed. Press Enter to exit.")
+        Console.ReadLine()
     End Sub
 End Module

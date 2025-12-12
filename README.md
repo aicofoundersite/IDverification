@@ -1,9 +1,13 @@
 # CrossSetaDeduplicator - Intelligent ID Verification & Deduplication System
 
 ## 📋 Project Overview
-**CrossSetaDeduplicator** is a production-ready **VB.NET Windows Forms** application designed to solve the critical challenge of identity verification for W&RSETA. It provides a secure, real-time mechanism to validate South African ID numbers, prevent duplicate learner registrations, and ensure data integrity across the SETA landscape.
+**CrossSetaDeduplicator** is a comprehensive identity verification solution for W&RSETA, consisting of a **Web Portal** (ASP.NET Core) and a **Desktop Application** (Windows Forms). It provides a secure, real-time mechanism to validate South African ID numbers, prevent duplicate learner registrations, and ensure data integrity across the SETA landscape.
 
 This solution is built on a strict **N-Tier Architecture**, utilizing **SQL Server 2019** for robust data management and audit compliance.
+
+### ☁️ Cloud Deployment
+Both the **Database** and the **Web Portal** can be deployed to the cloud (Fly.io).
+👉 **[Read the Fly.io Deployment Guide](DEPLOY_TO_FLY.md)** to set up the full stack.
 
 ---
 
@@ -45,8 +49,9 @@ Connects to an external trusted data source (simulating Department of Home Affai
 
 ## 🛠 Tech Stack & Architecture
 
-*   **Language**: VB.NET (.NET 6.0 / Framework 4.8 compatible)
-*   **Database**: SQL Server 2019
+*   **Desktop App**: VB.NET (.NET 6.0 / Windows Forms)
+*   **Web Portal**: C# (ASP.NET Core MVC / .NET 10.0)
+*   **Database**: SQL Server 2019 / Azure SQL Edge (Docker)
 *   **Architecture**: N-Tier (UI Layer → Service Layer → Data Access Layer)
 *   **Security**: Parameterized Queries (SQL Injection prevention), Environment Variable Configuration.
 

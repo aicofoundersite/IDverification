@@ -1,0 +1,247 @@
+@model CrossSetaWeb.Models.LearnerModel
+@{
+    ViewData["Title"] = "Register Learner";
+}
+
+<style>
+    .section-header {
+        background-color: SeaGreen;
+        color: white;
+        padding: 10px;
+        font-weight: bold;
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+    .form-label {
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+    .form-check-label {
+        font-size: 0.9rem;
+    }
+</style>
+
+<div class="container">
+    <h2 style="color: SeaGreen; font-weight: bold;">Register Learner</h2>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger">
+            @Html.ValidationSummary(false)
+        </div>
+    }
+
+    <form asp-action="Learner" method="post">
+        
+        <!-- Personal Information -->
+        <div class="section-header">Personal Information</div>
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <label class="form-label">First Name*</label>
+                <input asp-for="FirstName" class="form-control" />
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Middle Name</label>
+                <input asp-for="MiddleName" class="form-control" />
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Last Name*</label>
+                <input asp-for="LastName" class="form-control" />
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Title*</label>
+                <select asp-for="Title" class="form-control">
+                    <option value="">Select...</option>
+                    <option>Mr</option>
+                    <option>Ms</option>
+                    <option>Mrs</option>
+                </select>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <label class="form-label">ID Number*</label>
+                <input asp-for="NationalID" class="form-control" />
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Date of Birth*</label>
+                <input asp-for="DateOfBirth" class="form-control" type="date" />
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Gender*</label>
+                <select asp-for="Gender" class="form-control">
+                    <option value="">Select...</option>
+                    <option>Male</option>
+                    <option>Female</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Nationality*</label>
+                <select asp-for="Nationality" class="form-control">
+                    <option value="">Select...</option>
+                    <option>South Africa</option>
+                    <option>Other</option>
+                </select>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Equity Code</label>
+                <select asp-for="EquityCode" class="form-control">
+                     <option value="">Select...</option>
+                     <option>Black</option>
+                     <option>Coloured</option>
+                     <option>Indian/Asian</option>
+                     <option>White</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Home Language</label>
+                <select asp-for="HomeLanguage" class="form-control">
+                    <option value="">Select...</option>
+                    <option>English</option>
+                    <option>Zulu</option>
+                    <option>Xhosa</option>
+                    <option>Afrikaans</option>
+                    <!-- Add others as needed -->
+                </select>
+            </div>
+             <div class="col-md-3 mb-3">
+                <label class="form-label">Citizen Status</label>
+                <select asp-for="CitizenStatus" class="form-control">
+                    <option value="">Select...</option>
+                    <option>Citizen</option>
+                    <option>Permanent Resident</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Socio Economic Status</label>
+                <select asp-for="SocioEconomicStatus" class="form-control">
+                    <option value="">Select...</option>
+                    <option>Employed</option>
+                    <option>Unemployed</option>
+                </select>
+            </div>
+        </div>
+         <div class="row">
+            <div class="col-md-6 mb-3">
+                 <div class="form-check">
+                    <input asp-for="PopiActConsent" class="form-check-input" />
+                    <label class="form-check-label">POPI Act Consent</label>
+                </div>
+            </div>
+         </div>
+
+        <!-- Contact Information -->
+        <div class="section-header">Contact Information</div>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Cell Number*</label>
+                <input asp-for="CellphoneNumber" class="form-control" />
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Other Phone</label>
+                <input asp-for="PhoneNumber" class="form-control" />
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Email Address*</label>
+                <input asp-for="EmailAddress" class="form-control" type="email" />
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Street Address</label>
+                <input asp-for="StreetName" class="form-control" placeholder="Street Name" />
+                <input asp-for="StreetHouseNo" class="form-control mt-2" placeholder="House No" />
+                <input asp-for="PhysicalSuburb" class="form-control mt-2" placeholder="Suburb" />
+                <input asp-for="City" class="form-control mt-2" placeholder="City" />
+                <input asp-for="Province" class="form-control mt-2" placeholder="Province" />
+                 <input asp-for="Municipality" class="form-control mt-2" placeholder="Municipality" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Postal Address</label>
+                <div class="form-check mb-2">
+                    <input asp-for="IsResidentialAddressSameAsPostal" class="form-check-input" />
+                    <label class="form-check-label">Same as Physical</label>
+                </div>
+                <input asp-for="POBox" class="form-control" placeholder="PO Box" />
+                <input asp-for="PostalSuburb" class="form-control mt-2" placeholder="Suburb" />
+                <input asp-for="PostalCode" class="form-control mt-2" placeholder="Postal Code" />
+            </div>
+        </div>
+
+        <!-- Disability -->
+        <div class="section-header">Disability Status</div>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label">General Disability Status</label>
+                <select asp-for="DisabilityStatus" class="form-control">
+                    <option value="">Select...</option>
+                    <option>None</option>
+                    <option>Disabled</option>
+                </select>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-2 mb-3">
+                <label class="form-label">Seeing</label>
+                <select asp-for="Disability_Seeing" class="form-control">
+                    <option>None</option><option>Some difficulty</option><option>Cannot do at all</option>
+                </select>
+            </div>
+            <div class="col-md-2 mb-3">
+                <label class="form-label">Hearing</label>
+                <select asp-for="Disability_Hearing" class="form-control">
+                    <option>None</option><option>Some difficulty</option><option>Cannot do at all</option>
+                </select>
+            </div>
+            <div class="col-md-2 mb-3">
+                <label class="form-label">Walking</label>
+                <select asp-for="Disability_Walking" class="form-control">
+                    <option>None</option><option>Some difficulty</option><option>Cannot do at all</option>
+                </select>
+            </div>
+             <div class="col-md-2 mb-3">
+                <label class="form-label">Remembering</label>
+                <select asp-for="Disability_Remembering" class="form-control">
+                    <option>None</option><option>Some difficulty</option><option>Cannot do at all</option>
+                </select>
+            </div>
+             <div class="col-md-2 mb-3">
+                <label class="form-label">Communication</label>
+                <select asp-for="Disability_Communication" class="form-control">
+                    <option>None</option><option>Some difficulty</option><option>Cannot do at all</option>
+                </select>
+            </div>
+             <div class="col-md-2 mb-3">
+                <label class="form-label">Self Care</label>
+                <select asp-for="Disability_SelfCare" class="form-control">
+                    <option>None</option><option>Some difficulty</option><option>Cannot do at all</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Education -->
+        <div class="section-header">Education</div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Last School Attended</label>
+                <input asp-for="LastSchoolAttended" class="form-control" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Year Completed</label>
+                <input asp-for="LastSchoolYear" class="form-control" />
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-success" style="background-color: SeaGreen; border: none; padding: 10px 30px;">Register Learner</button>
+            <a href="/" class="btn btn-secondary" style="padding: 10px 30px;">Back</a>
+        </div>
+    </form>
+</div>

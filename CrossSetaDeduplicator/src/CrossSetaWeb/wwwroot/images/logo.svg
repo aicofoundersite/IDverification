@@ -1,0 +1,12 @@
+<svg width="200" height="80" xmlns="http://www.w3.org/2000/svg">
+ <g>
+  <title>W&RSETA</title>
+  <text transform="matrix(1,0,0,1,0,0) " font-weight="bold" xml:space="preserve" text-anchor="start" font-family="Arial, sans-serif" font-size="60" id="svg_1" y="60" x="10" stroke-width="0" stroke="#000" fill="#000000">W</text>
+  <text transform="matrix(1,0,0,1,0,0) " font-weight="bold" xml:space="preserve" text-anchor="start" font-family="Arial, sans-serif" font-size="80" id="svg_2" y="70" x="65" stroke-width="0" stroke="#000" fill="#ffffff" stroke-linejoin="round" stroke-linecap="round">&amp;</text>
+  <path d="m70,10 l30,0 l0,60 l-30,0 z" fill="none" stroke="black" stroke-width="2"/> 
+  <!-- Crude approximation of the & symbol cutout -->
+  <text transform="matrix(1,0,0,1,0,0) " font-weight="bold" xml:space="preserve" text-anchor="start" font-family="Arial, sans-serif" font-size="60" id="svg_3" y="60" x="110" stroke-width="0" stroke="#000" fill="#000000">RSETA</text>
+  <rect x="110" y="65" width="90" height="15" fill="#008000" />
+  <text xml:space="preserve" text-anchor="start" font-family="Arial, sans-serif" font-size="10" id="svg_4" y="76" x="112" stroke-width="0" stroke="#000" fill="#ffffff">WHOLESALE & RETAIL SETA</text>
+ </g>
+</svg>

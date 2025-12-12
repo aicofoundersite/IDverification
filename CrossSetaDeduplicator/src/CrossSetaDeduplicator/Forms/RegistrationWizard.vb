@@ -1,432 +1,365 @@
 Imports CrossSetaDeduplicator.Models
 Imports CrossSetaDeduplicator.Services
 Imports CrossSetaDeduplicator.DataAccess
+Imports System.Drawing
 
 Public Class RegistrationWizard
     Inherits Form
 
-    Private _currentStep As Integer = 1
     Private _learner As New LearnerModel()
-    Private _demoMode As New DemoMode()
     Private _dedupService As New DeduplicationService()
-    Private _kycService As New KYCService()
-    Private _homeAffairsService As New HomeAffairsService()
     Private _learnerService As New LearnerService()
     
-    Public Property IsDemoNarrative As Boolean = False
-
-    ' UI Controls
-    Private pnlStep1 As Panel
-    Private pnlStep2 As Panel
-    Private pnlStep3 As Panel
-    
-    Private txtNationalID As MaskedTextBox
-    Private lblKycStatus As Label
-    Private btnVerifyKyc As Button
-    Private btnScanDoc As Button
-    Private btnCaptureSelfie As Button
-    Private btnVerifyFace As Button
-    Private lblFaceMatchStatus As Label
-    Private btnNext1 As Button
-    Private chkConsent As CheckBox
-    Private chkOffline As CheckBox
-
-    Private _idDocumentPath As String
-    Private _selfiePath As String
-    
+    ' UI Controls - Biographic
+    Private txtNationality As TextBox
+    Private cmbTitle As ComboBox
     Private txtFirstName As TextBox
+    Private txtMiddleName As TextBox
     Private txtLastName As TextBox
+    Private txtNationalID As TextBox
     Private dtpDOB As DateTimePicker
+    Private txtAge As TextBox
+    Private cmbEquity As ComboBox
     Private cmbGender As ComboBox
-    Private cmbRole As ComboBox
-    Private cmbSeta As ComboBox ' New Control for SETA selection
-    Private btnNext2 As Button
-    Private btnBack2 As Button
+    Private cmbHomeLang As ComboBox
+    Private txtPrevLastName As TextBox
+    Private cmbMunicipality As ComboBox
+    Private cmbDisabilityStatus As ComboBox
+    Private cmbCitizenStatus As ComboBox
+    Private txtStatsAreaCode As TextBox
+    Private cmbSocioEcon As ComboBox
+    Private chkPopi As CheckBox
+    Private dtpPopiDate As DateTimePicker
 
-    Private lblResultTitle As Label
-    Private lblResultDetail As Label
-    Private btnFinish As Button
-    Private btnBack3 As Button
-    Private dgvMatches As DataGridView
-    
-    ' Status Bar
-    Private statusStrip As StatusStrip
-    Private lblSystemStatus As ToolStripStatusLabel
+    ' UI Controls - Contact
+    Private txtPhone As TextBox
+    Private txtPOBox As TextBox
+    Private txtCell As TextBox
+    Private txtStreetName As TextBox
+    Private txtPostalSuburb As TextBox
+    Private txtStreetNo As TextBox
+    Private txtPhysSuburb As TextBox
+    Private txtCity As TextBox
+    Private txtFax As TextBox
+    Private txtPostalCode As TextBox
+    Private txtEmail As TextBox
+    Private cmbProvince As ComboBox
+    Private chkResSamePostal As CheckBox
+    Private cmbUrbanRural As ComboBox
 
-    ' Narrative Controls
-    Private lblNarrativeTooltip As Label
+    ' UI Controls - Disability
+    Private txtDisComm As TextBox
+    Private txtDisHearing As TextBox
+    Private txtDisRemembering As TextBox
+    Private txtDisSeeing As TextBox
+    Private txtDisSelfCare As TextBox
+    Private txtDisWalking As TextBox
+
+    ' UI Controls - Education
+    Private txtSchoolName As TextBox
+    Private txtSchoolYear As TextBox
+
+    Private btnSubmit As Button
+    Private btnClose As Button
 
     Public Sub New()
         InitializeComponent()
-        UpdateSystemStatus()
-        ShowStep(1)
-    End Sub
-    
-    Private Sub RegistrationWizard_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        If IsDemoNarrative Then
-            StartNarrative()
-        End If
-    End Sub
-
-    Private Sub StartNarrative()
-        ' Auto-fill for the "Live Demo" story
-        lblNarrativeTooltip.Visible = True
-        lblNarrativeTooltip.Text = "Step 1: Enter National ID. Watch as we simulate a connection to Home Affairs."
-        
-        txtNationalID.Text = "9505055000081" ' The ID we seeded as "Thabo Molefe"
-        
-        Dim t As New Timer()
-        t.Interval = 1500
-        AddHandler t.Tick, Sub(s, args)
-             t.Stop()
-             btnVerifyKyc.PerformClick()
-             lblNarrativeTooltip.Text = "KYC Verified! Proceeding to capture details..."
-        End Sub
-        t.Start()
     End Sub
 
     Private Sub InitializeComponent()
-        Me.Size = New Size(600, 500)
-        Me.Text = "New Learner Registration Wizard"
-        Me.StartPosition = FormStartPosition.CenterParent
+        Me.Text = "Learner Registration Form"
+        Me.Size = New Size(1100, 800)
+        Me.StartPosition = FormStartPosition.CenterScreen
+        Me.BackColor = Color.White
+        Me.AutoScroll = True
 
-        ' Common styles
-        Dim titleFont As New Font("Segoe UI", 14, FontStyle.Bold)
-        Dim bodyFont As New Font("Segoe UI", 10)
+        Dim sectionHeaderColor As Color = Color.SeaGreen
+        Dim sectionHeaderTextColor As Color = Color.White
+        Dim mainFont As New Font("Segoe UI", 9)
+        Dim boldFont As New Font("Segoe UI", 9, FontStyle.Bold)
 
-        ' Narrative Tooltip
-        lblNarrativeTooltip = New Label() With {
+        ' --- Top Header ---
+        Dim pnlHeader As New Panel() With {
             .Dock = DockStyle.Top,
-            .Height = 40,
-            .BackColor = Color.LightYellow,
-            .ForeColor = Color.DarkBlue,
-            .TextAlign = ContentAlignment.MiddleCenter,
-            .Font = New Font("Segoe UI", 10, FontStyle.Italic),
-            .Visible = False
+            .Height = 50,
+            .BackColor = Color.DimGray
         }
-        Me.Controls.Add(lblNarrativeTooltip)
+        Dim lblTitle As New Label() With {
+            .Text = "ADD NEW APPLICATION",
+            .ForeColor = Color.White,
+            .Font = New Font("Segoe UI", 12, FontStyle.Bold),
+            .Location = New Point(10, 15),
+            .AutoSize = True
+        }
+        pnlHeader.Controls.Add(lblTitle)
 
-        ' Status Strip
-        statusStrip = New StatusStrip()
-        lblSystemStatus = New ToolStripStatusLabel() With {.Text = "System Status: Online", .ForeColor = Color.Green, .Font = New Font("Segoe UI", 9, FontStyle.Bold)}
-        statusStrip.Items.Add(lblSystemStatus)
-        Me.Controls.Add(statusStrip)
+        btnClose = New Button() With {
+            .Text = "Close Form",
+            .BackColor = Color.IndianRed,
+            .ForeColor = Color.White,
+            .FlatStyle = FlatStyle.Flat,
+            .Location = New Point(800, 10),
+            .Size = New Size(100, 30),
+            .Anchor = AnchorStyles.Right Or AnchorStyles.Top
+        }
+        AddHandler btnClose.Click, AddressOf BtnClose_Click
+        pnlHeader.Controls.Add(btnClose)
 
-        ' --- Step 1 Panel ---
-        pnlStep1 = New Panel() With {.Dock = DockStyle.Fill, .Visible = True}
-        Dim lblTitle1 As New Label() With {.Text = "Step 1: Identity Verification", .Font = titleFont, .Location = New Point(20, 20), .AutoSize = True}
+        btnSubmit = New Button() With {
+            .Text = "Submit Application",
+            .BackColor = Color.SeaGreen,
+            .ForeColor = Color.White,
+            .FlatStyle = FlatStyle.Flat,
+            .Location = New Point(910, 10),
+            .Size = New Size(140, 30),
+            .Anchor = AnchorStyles.Right Or AnchorStyles.Top
+        }
+        AddHandler btnSubmit.Click, AddressOf BtnSubmit_Click
+        pnlHeader.Controls.Add(btnSubmit)
+
+        Me.Controls.Add(pnlHeader)
+
+        ' --- Scrollable Content Panel ---
+        Dim pnlContent As New Panel() With {
+            .Dock = DockStyle.Fill,
+            .AutoScroll = True,
+            .Padding = New Padding(10)
+        }
+        Me.Controls.Add(pnlContent)
+        pnlContent.BringToFront()
+
+        Dim currentY As Integer = 60
+
+        ' === Biographic Details ===
+        currentY = AddSectionHeader(pnlContent, "Biographic details", currentY)
         
-        Dim lblSeta As New Label() With {.Text = "Operating SETA:", .Location = New Point(300, 20), .AutoSize = True, .Font = New Font("Segoe UI", 9, FontStyle.Bold)}
-        cmbSeta = New ComboBox() With {.Location = New Point(400, 18), .Width = 150, .DropDownStyle = ComboBoxStyle.DropDownList}
-        ' Scalability Note: In production, these items should be populated from the 'SetaRegistry' table in the database.
-        cmbSeta.Items.AddRange({"W&RSETA", "CHIETA", "MERSETA", "AGRISETA", "BANKSETA"})
-        cmbSeta.SelectedIndex = 0
-
-        Dim lblIdPrompt As New Label() With {.Text = "National ID Number:", .Location = New Point(20, 60), .AutoSize = True}
-        txtNationalID = New MaskedTextBox() With {.Location = New Point(20, 80), .Width = 250, .Mask = "0000000000000", .PromptChar = "_"c}
+        Dim pnlBio As New Panel() With {.Location = New Point(10, currentY), .Size = New Size(1050, 260), .BorderStyle = BorderStyle.None}
+        pnlContent.Controls.Add(pnlBio)
         
-        Dim lblFn As New Label() With {.Text = "First Name:", .Location = New Point(20, 110)}
-        txtFirstName = New TextBox() With {.Location = New Point(20, 130), .Width = 250}
+        ' Row 1
+        AddControl(pnlBio, "Nationality*", New TextBox(), txtNationality, 0, 0)
+        AddControl(pnlBio, "Title*", New ComboBox() With {.DataSource = {"Mr", "Ms", "Mrs"}}, cmbTitle, 260, 0)
+        AddControl(pnlBio, "First Name*", New TextBox(), txtFirstName, 520, 0)
+        AddControl(pnlBio, "Middle Name", New TextBox(), txtMiddleName, 780, 0)
+
+        ' Row 2
+        AddControl(pnlBio, "Last Name*", New TextBox(), txtLastName, 0, 50)
+        AddControl(pnlBio, "National ID/PassportNo*", New TextBox(), txtNationalID, 260, 50)
+        AddControl(pnlBio, "Date Of Birth*", New DateTimePicker(), dtpDOB, 520, 50)
+        AddHandler dtpDOB.ValueChanged, AddressOf dtpDOB_ValueChanged
+        AddControl(pnlBio, "Age*", New TextBox() With {.ReadOnly = True}, txtAge, 780, 50)
+
+        ' Row 3
+        AddControl(pnlBio, "Equity Code*", New ComboBox() With {.DataSource = {"Black", "Coloured", "Indian", "White"}}, cmbEquity, 0, 100)
+        AddControl(pnlBio, "Gender*", New ComboBox() With {.DataSource = {"Male", "Female"}}, cmbGender, 260, 100)
+        AddControl(pnlBio, "Home Language*", New ComboBox() With {.DataSource = {"English", "Zulu", "Xhosa", "Afrikaans"}}, cmbHomeLang, 520, 100)
+        AddControl(pnlBio, "Previous Last Name", New TextBox(), txtPrevLastName, 780, 100)
+
+        ' Row 4
+        AddControl(pnlBio, "Municipality/District*", New ComboBox() With {.DataSource = {"City of Joburg", "Ekurhuleni", "Tshwane"}}, cmbMunicipality, 0, 150)
+        AddControl(pnlBio, "Disability Status*", New ComboBox() With {.DataSource = {"None", "Disabled"}}, cmbDisabilityStatus, 260, 150)
+        AddControl(pnlBio, "Citizen Status*", New ComboBox() With {.DataSource = {"SA Citizen", "Permanent Resident", "Other"}}, cmbCitizenStatus, 520, 150)
+        AddControl(pnlBio, "Stats Area Code*", New TextBox(), txtStatsAreaCode, 780, 150)
+
+        ' Row 5
+        AddControl(pnlBio, "Socio economic status*", New ComboBox() With {.DataSource = {"Employed", "Unemployed", "Student"}}, cmbSocioEcon, 0, 200)
         
-        Dim lblLn As New Label() With {.Text = "Last Name:", .Location = New Point(20, 160)}
-        txtLastName = New TextBox() With {.Location = New Point(20, 180), .Width = 250}
-
-        ' Document & Selfie Buttons
-        btnScanDoc = New Button() With {.Text = "📷 Scan Document", .Location = New Point(300, 80), .Width = 140, .BackColor = Color.LightBlue}
-        btnCaptureSelfie = New Button() With {.Text = "👤 Capture Selfie", .Location = New Point(450, 80), .Width = 140, .BackColor = Color.LightBlue}
+        Dim chk As New CheckBox() With {.Text = "Agree to POPI Act", .Location = New Point(260, 220), .AutoSize = True}
+        pnlBio.Controls.Add(chk)
+        chkPopi = chk
         
-        ' Verification Buttons
-        btnVerifyKyc = New Button() With {.Text = "Verify Identity (HA)", .Location = New Point(300, 130), .Width = 140}
-        btnVerifyFace = New Button() With {.Text = "Biometric Match", .Location = New Point(450, 130), .Width = 140}
+        AddControl(pnlBio, "POPI Act Agreement Date*", New DateTimePicker(), dtpPopiDate, 520, 200)
 
-        chkConsent = New CheckBox() With {.Text = "I consent to ID Verification (POPIA)", .Location = New Point(20, 220), .AutoSize = True}
-        chkOffline = New CheckBox() With {.Text = "Simulate Offline", .Location = New Point(300, 220), .AutoSize = True, .ForeColor = Color.DarkGray}
+        currentY += 270
+
+        ' === Contact Details ===
+        currentY = AddSectionHeader(pnlContent, "Contact details", currentY)
+        Dim pnlContact As New Panel() With {.Location = New Point(10, currentY), .Size = New Size(1050, 220), .BorderStyle = BorderStyle.None}
+        pnlContent.Controls.Add(pnlContact)
+
+        ' Row 1
+        AddControl(pnlContact, "Phone number", New TextBox(), txtPhone, 0, 0)
+        AddControl(pnlContact, "P.O Box", New TextBox(), txtPOBox, 260, 0)
+        AddControl(pnlContact, "Cellphone number*", New TextBox(), txtCell, 520, 0)
+        AddControl(pnlContact, "Street Name*", New TextBox(), txtStreetName, 780, 0)
+
+        ' Row 2
+        AddControl(pnlContact, "Postal Suburb", New TextBox(), txtPostalSuburb, 0, 50)
+        AddControl(pnlContact, "Street/House No*", New TextBox(), txtStreetNo, 260, 50)
+        AddControl(pnlContact, "Physical Suburb*", New TextBox(), txtPhysSuburb, 520, 50)
+        AddControl(pnlContact, "City*", New TextBox(), txtCity, 780, 50)
+
+        ' Row 3
+        AddControl(pnlContact, "Fax number", New TextBox(), txtFax, 0, 100)
+        ' AddControl(pnlContact, "City (dup)", New TextBox(), Nothing, 260, 100) ' Removed Duplicate
+        AddControl(pnlContact, "Postal code*", New TextBox(), txtPostalCode, 520, 100)
         
-        lblKycStatus = New Label() With {.Text = "", .Location = New Point(20, 250), .AutoSize = True, .Font = New Font("Segoe UI", 10, FontStyle.Bold)}
-        lblFaceMatchStatus = New Label() With {.Text = "", .Location = New Point(300, 250), .AutoSize = True, .Font = New Font("Segoe UI", 10, FontStyle.Bold)}
+        Dim chkRes As New CheckBox() With {.Text = "Is Residential Addr Same as Postal", .Location = New Point(780, 120), .AutoSize = True}
+        pnlContact.Controls.Add(chkRes)
+        chkResSamePostal = chkRes
 
-        btnNext1 = New Button() With {.Text = "Next >", .Location = New Point(450, 400), .Enabled = False}
+        ' Row 4
+        ' AddControl(pnlContact, "Postal code (dup)", New TextBox(), Nothing, 0, 150) ' Removed Duplicate
+        AddControl(pnlContact, "Email address*", New TextBox(), txtEmail, 260, 150)
+        AddControl(pnlContact, "Province*", New ComboBox() With {.DataSource = {"Gauteng", "KZN", "WC"}}, cmbProvince, 520, 150)
+        AddControl(pnlContact, "Urban/Rural*", New ComboBox() With {.DataSource = {"Urban", "Rural"}}, cmbUrbanRural, 780, 150)
 
-        pnlStep1.Controls.AddRange({lblTitle1, lblSeta, cmbSeta, lblIdPrompt, txtNationalID, lblFn, txtFirstName, lblLn, txtLastName, btnScanDoc, btnCaptureSelfie, btnVerifyKyc, btnVerifyFace, chkConsent, chkOffline, lblKycStatus, lblFaceMatchStatus, btnNext1})
-        Me.Controls.Add(pnlStep1)
+        currentY += 230
 
-        ' --- Step 2 Panel ---
-        pnlStep2 = New Panel() With {.Dock = DockStyle.Fill, .Visible = False}
-        Dim lblTitle2 As New Label() With {.Text = "Step 2: Learner Details", .Font = titleFont, .Location = New Point(20, 50), .AutoSize = True}
+        ' === Disability Details ===
+        currentY = AddSectionHeader(pnlContent, "Disability details", currentY)
+        Dim pnlDis As New Panel() With {.Location = New Point(10, currentY), .Size = New Size(1050, 120), .BorderStyle = BorderStyle.None}
+        pnlContent.Controls.Add(pnlDis)
+
+        ' Row 1
+        AddControl(pnlDis, "Communication*", New TextBox(), txtDisComm, 0, 0)
+        AddControl(pnlDis, "Hearing*", New TextBox(), txtDisHearing, 260, 0)
+        AddControl(pnlDis, "Remembering*", New TextBox(), txtDisRemembering, 520, 0)
+        AddControl(pnlDis, "Seeing*", New TextBox(), txtDisSeeing, 780, 0)
+
+        ' Row 2
+        AddControl(pnlDis, "Self Care*", New TextBox(), txtDisSelfCare, 0, 50)
+        AddControl(pnlDis, "Walking*", New TextBox(), txtDisWalking, 260, 50)
+
+        currentY += 130
+
+        ' === Education Details ===
+        currentY = AddSectionHeader(pnlContent, "Education details", currentY)
+        Dim pnlEdu As New Panel() With {.Location = New Point(10, currentY), .Size = New Size(1050, 180), .BorderStyle = BorderStyle.None}
+        pnlContent.Controls.Add(pnlEdu)
         
-        ' Moved Name/Surname to Step 1
-        
-        Dim lblDob As New Label() With {.Text = "Date of Birth:", .Location = New Point(20, 100)}
-        dtpDOB = New DateTimePicker() With {.Location = New Point(150, 100), .Width = 200}
-        
-        Dim lblGen As New Label() With {.Text = "Gender:", .Location = New Point(20, 140)}
-        cmbGender = New ComboBox() With {.Location = New Point(150, 140), .Width = 200}
-        cmbGender.Items.AddRange({"Male", "Female", "Other"})
+        ' Radio buttons
+        Dim rad1 As New RadioButton() With {.Text = "I have selected my last school attended.", .Location = New Point(0, 0), .AutoSize = True}
+        Dim rad2 As New RadioButton() With {.Text = "Unable to find the last school attended, last school attended was in South Africa.", .Location = New Point(0, 25), .AutoSize = True}
+        Dim rad3 As New RadioButton() With {.Text = "Unable to find the last school attended, last school attended was not in South Africa.", .Location = New Point(0, 50), .AutoSize = True}
+        pnlEdu.Controls.AddRange({rad1, rad2, rad3})
 
-        Dim lblRole As New Label() With {.Text = "Role:", .Location = New Point(20, 180)}
-        cmbRole = New ComboBox() With {.Location = New Point(150, 180), .Width = 200}
-        cmbRole.Items.AddRange({"Learner", "Assessor", "Moderator"})
-        cmbRole.SelectedIndex = 0
+        AddControl(pnlEdu, "Last School Attended*", New TextBox(), txtSchoolName, 0, 80)
+        ' Add Button for Search School
+        Dim btnSearchSchool As New Button() With {
+            .Text = "Search School",
+            .Location = New Point(0, 140),
+            .Size = New Size(240, 30),
+            .BackColor = Color.SeaGreen,
+            .ForeColor = Color.White,
+            .FlatStyle = FlatStyle.Flat
+        }
+        pnlEdu.Controls.Add(btnSearchSchool)
 
-        btnBack2 = New Button() With {.Text = "< Back", .Location = New Point(20, 400)}
-        btnNext2 = New Button() With {.Text = "Check Duplicates >", .Location = New Point(420, 400), .Width = 140}
+        AddControl(pnlEdu, "Last School Year*", New TextBox(), txtSchoolYear, 520, 80)
 
-        pnlStep2.Controls.AddRange({lblTitle2, lblDob, dtpDOB, lblGen, cmbGender, lblRole, cmbRole, btnBack2, btnNext2})
-        Me.Controls.Add(pnlStep2)
-
-        ' --- Step 3 Panel ---
-        pnlStep3 = New Panel() With {.Dock = DockStyle.Fill, .Visible = False}
-        Dim lblTitle3 As New Label() With {.Text = "Step 3: Verification Results", .Font = titleFont, .Location = New Point(20, 50), .AutoSize = True}
-        lblResultTitle = New Label() With {.Location = New Point(20, 100), .AutoSize = True, .Font = New Font("Segoe UI", 12, FontStyle.Bold)}
-        lblResultDetail = New Label() With {.Location = New Point(20, 130), .AutoSize = True, .Width = 500}
-        dgvMatches = New DataGridView() With {.Location = New Point(20, 160), .Size = New Size(540, 200), .ReadOnly = True}
-        
-        btnBack3 = New Button() With {.Text = "< Back", .Location = New Point(20, 400)}
-        btnFinish = New Button() With {.Text = "Finish", .Location = New Point(450, 400)}
-
-        pnlStep3.Controls.AddRange({lblTitle3, lblResultTitle, lblResultDetail, dgvMatches, btnBack3, btnFinish})
-        Me.Controls.Add(pnlStep3)
-
-        ' Events
-        AddHandler btnScanDoc.Click, AddressOf BtnScanDoc_Click
-        AddHandler btnCaptureSelfie.Click, AddressOf BtnCaptureSelfie_Click
-        AddHandler btnVerifyKyc.Click, AddressOf BtnVerifyKyc_Click
-        AddHandler btnVerifyFace.Click, AddressOf BtnVerifyFace_Click
-        AddHandler btnNext1.Click, Sub() ShowStep(2)
-        AddHandler btnBack2.Click, Sub() ShowStep(1)
-        AddHandler btnNext2.Click, AddressOf BtnValidateDetails_Click
-        AddHandler btnBack3.Click, Sub() ShowStep(2)
-        AddHandler btnFinish.Click, AddressOf BtnFinish_Click
-        AddHandler chkOffline.CheckedChanged, AddressOf UpdateSystemStatus
-    End Sub
-    
-    Private Async Sub UpdateSystemStatus(Optional sender As Object = Nothing, Optional e As EventArgs = Nothing)
-        If chkOffline.Checked Then
-            lblSystemStatus.Text = "System Status: OFFLINE (Queueing Mode)"
-            lblSystemStatus.ForeColor = Color.Red
-            statusStrip.BackColor = Color.MistyRose
-        Else
-            lblSystemStatus.Text = "System Status: ONLINE (Connected to Home Affairs)"
-            lblSystemStatus.ForeColor = Color.Green
-            statusStrip.BackColor = SystemColors.Control
-            
-            ' Process Offline Queue if it exists
-            Dim count = Await _homeAffairsService.ProcessOfflineQueueAsync()
-            If count > 0 Then
-                MessageBox.Show($"System is back online. {count} queued verification requests have been processed automatically.", "Offline Queue Processed", MessageBoxButtons.OK, MessageBoxIcon.Information)
-            End If
-        End If
-    End Sub
-
-    Private Sub ShowStep(stepNum As Integer)
-        _currentStep = stepNum
-        pnlStep1.Visible = (stepNum = 1)
-        pnlStep2.Visible = (stepNum = 2)
-        pnlStep3.Visible = (stepNum = 3)
-        
-        ' Narrative progress
-        If IsDemoNarrative Then
-            If stepNum = 2 Then
-                 lblNarrativeTooltip.Text = "Step 2: Confirming details pulled from Home Affairs (Simulated)..."
-                 ' Auto fill details
-                 txtFirstName.Text = "Thabo"
-                 txtLastName.Text = "Molefe" ' Matches the seeded record
-                 cmbGender.SelectedIndex = 0
-            ElseIf stepNum = 3 Then
-                 lblNarrativeTooltip.Text = "Step 3: Analyzing Cross-SETA database for duplicates..."
-            End If
-        End If
-    End Sub
-
-    Private Sub BtnScanDoc_Click(sender As Object, e As EventArgs)
-        Using openFileDialog As New OpenFileDialog()
-            openFileDialog.Title = "Select ID Document (Passport, ID Card, Driver's License)"
-            openFileDialog.Filter = "Image Files|*.jpg;*.jpeg;*.png;*.bmp"
-            
-            If openFileDialog.ShowDialog() = DialogResult.OK Then
-                _idDocumentPath = openFileDialog.FileName
-                lblKycStatus.Text = "Scanning Document..."
-                lblKycStatus.ForeColor = Color.Orange
-                Application.DoEvents() ' Force UI update
-                
-                Dim result = _kycService.VerifyDocument(openFileDialog.FileName)
-                
-                If result.IsSuccess Then
-                    ' Auto-populate Step 1 ID if found
-                    If result.ExtractedFields.ContainsKey("NationalID") Then
-                        txtNationalID.Text = result.ExtractedFields("NationalID")
-                    End If
-                    
-                    ' Populate Step 2 Fields (Pre-fill logic)
-                    If result.ExtractedFields.ContainsKey("FirstNames") Then txtFirstName.Text = result.ExtractedFields("FirstNames")
-                    If result.ExtractedFields.ContainsKey("Surname") Then txtLastName.Text = result.ExtractedFields("Surname")
-                    
-                    ' Try parse DOB
-                    If result.ExtractedFields.ContainsKey("DateOfBirth") Then
-                         Dim dob As DateTime
-                         If DateTime.TryParse(result.ExtractedFields("DateOfBirth"), dob) Then
-                             dtpDOB.Value = dob
-                         End If
-                    End If
-                    
-                    ' Try parse Gender
-                     If result.ExtractedFields.ContainsKey("Gender") Then
-                         Dim g = result.ExtractedFields("Gender").ToLower()
-                         If g.StartsWith("m") Then cmbGender.SelectedIndex = 0
-                         If g.StartsWith("f") Then cmbGender.SelectedIndex = 1
-                     End If
-
-                    lblKycStatus.Text = $"Document Verified: {result.DocumentType}"
-                    lblKycStatus.ForeColor = Color.Green
-                Else
-                    lblKycStatus.Text = "Error: " & result.ErrorMessage
-                    lblKycStatus.ForeColor = Color.Red
-                End If
-            End If
-        End Using
+        currentY += 160
     End Sub
 
-    Private Sub BtnCaptureSelfie_Click(sender As Object, e As EventArgs)
-        Using openFileDialog As New OpenFileDialog()
-            openFileDialog.Title = "Select Selfie / Capture Face"
-            openFileDialog.Filter = "Image Files|*.jpg;*.jpeg;*.png;*.bmp"
-            
-            If openFileDialog.ShowDialog() = DialogResult.OK Then
-                _selfiePath = openFileDialog.FileName
-                lblFaceMatchStatus.Text = "Selfie Loaded."
-                lblFaceMatchStatus.ForeColor = Color.Blue
-            End If
-        End Using
+    Private Function AddSectionHeader(parent As Panel, text As String, y As Integer) As Integer
+        Dim lbl As New Label() With {
+            .Text = text,
+            .BackColor = Color.SeaGreen,
+            .ForeColor = Color.White,
+            .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+            .Location = New Point(10, y),
+            .Size = New Size(1050, 30),
+            .TextAlign = ContentAlignment.MiddleLeft,
+            .Padding = New Padding(5, 0, 0, 0)
+        }
+        parent.Controls.Add(lbl)
+        Return y + 40
+    End Function
+
+    Private Sub AddControl(parent As Panel, label As String, ctrl As Control, ByRef refCtrl As Control, x As Integer, y As Integer)
+        Dim lbl As New Label() With {
+            .Text = label,
+            .Location = New Point(x, y),
+            .AutoSize = True,
+            .Font = New Font("Segoe UI", 8)
+        }
+        parent.Controls.Add(lbl)
+        
+        ctrl.Location = New Point(x, y + 15)
+        ctrl.Width = 240
+        ctrl.Font = New Font("Segoe UI", 10)
+        parent.Controls.Add(ctrl)
+        
+        ' Manually assigning to the class field if needed by logic
+        refCtrl = ctrl
     End Sub
 
-    Private Sub BtnVerifyFace_Click(sender As Object, e As EventArgs)
-        If String.IsNullOrEmpty(_idDocumentPath) Then
-             MessageBox.Show("Please scan an ID Document first.", "Missing Document", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-             Return
-        End If
-
-        If String.IsNullOrEmpty(_selfiePath) Then
-             MessageBox.Show("Please capture or upload a selfie first.", "Missing Selfie", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-             Return
-        End If
-        
-        lblFaceMatchStatus.Text = "Comparing Faces..."
-        lblFaceMatchStatus.ForeColor = Color.Orange
-        Application.DoEvents()
-
-        Dim result = _kycService.CompareFaces(_idDocumentPath, _selfiePath)
-        
-        lblFaceMatchStatus.Text = result.Message & $" ({result.ConfidenceScore}%)"
-        
-        If result.IsMatch Then
-            lblFaceMatchStatus.ForeColor = Color.Green
-        Else
-            lblFaceMatchStatus.ForeColor = Color.Red
-        End If
+    Private Sub dtpDOB_ValueChanged(sender As Object, e As EventArgs)
+        Dim dob = dtpDOB.Value
+        Dim age = DateTime.Now.Year - dob.Year
+        If DateTime.Now < dob.AddYears(age) Then age -= 1
+        txtAge.Text = age.ToString()
     End Sub
 
-    Private Async Sub BtnVerifyKyc_Click(sender As Object, e As EventArgs)
-        ' POPIA Consent Check
-        If Not chkConsent.Checked Then
-            MessageBox.Show("Please obtain consent from the learner before verifying their identity (POPIA Requirement).", "Consent Required", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-            Return
-        End If
-
-        ' Require Name/Surname for Traffic Light "Mismatch" check
-        If String.IsNullOrWhiteSpace(txtFirstName.Text) OrElse String.IsNullOrWhiteSpace(txtLastName.Text) Then
-             MessageBox.Show("Please enter First Name and Last Name to verify against Home Affairs.", "Input Required", MessageBoxButtons.OK, MessageBoxIcon.Information)
-             Return
-        End If
-
-        lblKycStatus.Text = "Verifying with Home Affairs..."
-        lblKycStatus.ForeColor = Color.Orange
-        Application.DoEvents()
-
-        ' Set Offline Mode based on Checkbox
-        _homeAffairsService.SimulateOffline = chkOffline.Checked
-
-        ' Call Service Async
-        Dim currentUser As String = If(Not String.IsNullOrEmpty(Environment.UserName), Environment.UserName, "UnknownUser")
-        Dim result = Await _homeAffairsService.VerifyCitizenAsync(txtNationalID.Text, txtFirstName.Text, txtLastName.Text, currentUser)
-
-        ' Update UI
-        lblKycStatus.Text = result.Message
-        lblKycStatus.ForeColor = result.TrafficLightColor
-        
-        If result.IsValid Then
-             ' Allow to proceed if Valid (Green) or Mismatch (Yellow)
-             btnNext1.Enabled = True
-             
-             If result.Status = "Mismatch" Then
-                 MessageBox.Show(result.Message, "Surname Mismatch", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-             End If
-             
-        ElseIf result.Status = "OfflineQueued" Then
-             MessageBox.Show("System is offline. The request has been queued and will be processed automatically when connectivity is restored.", "Offline Mode", MessageBoxButtons.OK, MessageBoxIcon.Information)
-             btnNext1.Enabled = True ' Allow capture in offline mode
-        Else
-             btnNext1.Enabled = False
-        End If
+    Private Sub BtnClose_Click(sender As Object, e As EventArgs)
+        Me.Close()
     End Sub
 
-    Private Sub BtnValidateDetails_Click(sender As Object, e As EventArgs)
-        ' Input Validation: Name and Surname already checked in Step 1, but good to double check or check other fields
-        BtnCheckDuplicates_Click(sender, e)
-    End Sub
-
-    Private Sub BtnCheckDuplicates_Click(sender As Object, e As EventArgs)
-        _learner.NationalID = txtNationalID.Text
+    Private Sub BtnSubmit_Click(sender As Object, e As EventArgs)
+        ' 1. Map UI to Model
+        _learner.Nationality = txtNationality.Text
+        _learner.Title = If(cmbTitle.SelectedItem IsNot Nothing, cmbTitle.SelectedItem.ToString(), "")
         _learner.FirstName = txtFirstName.Text
+        _learner.MiddleName = txtMiddleName.Text
         _learner.LastName = txtLastName.Text
+        _learner.NationalID = txtNationalID.Text
         _learner.DateOfBirth = dtpDOB.Value
-        _learner.Gender = If(cmbGender.SelectedItem IsNot Nothing, cmbGender.SelectedItem.ToString(), "")
-        _learner.Role = If(cmbRole.SelectedItem IsNot Nothing, cmbRole.SelectedItem.ToString(), "Learner")
-        _learner.IsVerified = True
-        _learner.SetaName = If(cmbSeta.SelectedItem IsNot Nothing, cmbSeta.SelectedItem.ToString(), "W&RSETA")
-
-        ' Use Service for logic if needed, but currently logic is in DedupService
-        ' _learnerService.CheckForDuplicates(_learner) could be a wrapper
         
-        Dim result = _dedupService.CheckForDuplicates(_learner)
-        
-        ShowStep(3)
-        
-        If result.IsDuplicate Then
-            lblResultTitle.Text = "⚠️ Potential Duplicate Found"
-            lblResultTitle.ForeColor = Color.Red
-            lblResultDetail.Text = $"Match Type: {result.MatchType} (Score: {result.MatchScore}%). Record found in system."
-            
-            Dim list As New List(Of Object)
-            list.Add(New With {
-                .ID = result.MatchedLearner.NationalID,
-                .Name = result.MatchedLearner.FirstName & " " & result.MatchedLearner.LastName,
-                .Score = result.MatchScore,
-                .Type = result.MatchType,
-                .FoundIn = result.FoundInSeta
-            })
-            dgvMatches.DataSource = list
-            btnFinish.Text = "Cancel"
+        Dim ageVal As Integer
+        If Integer.TryParse(txtAge.Text, ageVal) Then
+            _learner.Age = ageVal
         Else
-            lblResultTitle.Text = "✅ No Duplicates Found"
-            lblResultTitle.ForeColor = Color.Green
-            lblResultDetail.Text = "This learner is eligible for registration."
-            dgvMatches.DataSource = Nothing
-            btnFinish.Text = "Register Learner"
+            _learner.Age = 0
         End If
-    End Sub
 
-    Private Sub BtnFinish_Click(sender As Object, e As EventArgs)
-        If btnFinish.Text = "Register Learner" Then
-            Try
-                ' STRICT N-TIER: Use LearnerService
-                _learnerService.RegisterLearner(_learner)
-                MessageBox.Show("Learner Registered Successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
-                Me.Close()
-            Catch ex As Exception
-                MessageBox.Show("Error saving: " & ex.Message)
-            End Try
+        _learner.EquityCode = If(cmbEquity.SelectedItem IsNot Nothing, cmbEquity.SelectedItem.ToString(), "")
+        _learner.Gender = If(cmbGender.SelectedItem IsNot Nothing, cmbGender.SelectedItem.ToString(), "")
+        _learner.HomeLanguage = If(cmbHomeLang.SelectedItem IsNot Nothing, cmbHomeLang.SelectedItem.ToString(), "")
+        _learner.Municipality = If(cmbMunicipality.SelectedItem IsNot Nothing, cmbMunicipality.SelectedItem.ToString(), "")
+        _learner.DisabilityStatus = If(cmbDisabilityStatus.SelectedItem IsNot Nothing, cmbDisabilityStatus.SelectedItem.ToString(), "")
+        _learner.CitizenStatus = If(cmbCitizenStatus.SelectedItem IsNot Nothing, cmbCitizenStatus.SelectedItem.ToString(), "")
+        _learner.StatsAreaCode = txtStatsAreaCode.Text
+        _learner.SocioEconomicStatus = If(cmbSocioEcon.SelectedItem IsNot Nothing, cmbSocioEcon.SelectedItem.ToString(), "")
+        _learner.PopiActConsent = chkPopi.Checked
+        _learner.PopiActDate = dtpPopiDate.Value
+        
+        _learner.PhoneNumber = txtPhone.Text
+        _learner.POBox = txtPOBox.Text
+        _learner.CellphoneNumber = txtCell.Text
+        _learner.StreetName = txtStreetName.Text
+        _learner.PostalSuburb = txtPostalSuburb.Text
+        _learner.StreetHouseNo = txtStreetNo.Text
+        _learner.PhysicalSuburb = txtPhysSuburb.Text
+        _learner.City = txtCity.Text
+        _learner.FaxNumber = txtFax.Text
+        _learner.PostalCode = txtPostalCode.Text
+        _learner.EmailAddress = txtEmail.Text
+        _learner.Province = If(cmbProvince.SelectedItem IsNot Nothing, cmbProvince.SelectedItem.ToString(), "")
+        _learner.UrbanRural = If(cmbUrbanRural.SelectedItem IsNot Nothing, cmbUrbanRural.SelectedItem.ToString(), "")
+        
+        _learner.Disability_Communication = txtDisComm.Text
+        _learner.Disability_Hearing = txtDisHearing.Text
+        _learner.Disability_Remembering = txtDisRemembering.Text
+        _learner.Disability_Seeing = txtDisSeeing.Text
+        _learner.Disability_SelfCare = txtDisSelfCare.Text
+        _learner.Disability_Walking = txtDisWalking.Text
+        
+        _learner.LastSchoolAttended = txtSchoolName.Text
+        _learner.LastSchoolYear = txtSchoolYear.Text
+        
+        ' 2. Check for Duplicates
+        Dim result = _dedupService.CheckForDuplicates(_learner)
+        If result.IsDuplicate Then
+            MessageBox.Show($"Potential Duplicate Found!{vbCrLf}Match Type: {result.MatchType}{vbCrLf}Score: {result.MatchScore}%", "Duplicate Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning)
         Else
-            Me.Close()
+             ' 3. Register
+             Try
+                 _learnerService.RegisterLearner(_learner)
+                 MessageBox.Show("Learner Registered Successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                 Me.Close()
+             Catch ex As Exception
+                 MessageBox.Show("Error saving: " & ex.Message)
+             End Try
         End If
     End Sub
 

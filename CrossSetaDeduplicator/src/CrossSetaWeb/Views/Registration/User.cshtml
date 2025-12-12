@@ -1,0 +1,133 @@
+@model CrossSetaWeb.Models.RegisterUserViewModel
+@{
+    ViewData["Title"] = "Register User";
+}
+
+<style>
+    .section-header {
+        background-color: SeaGreen;
+        color: white;
+        padding: 10px;
+        font-weight: bold;
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+    .form-label {
+        font-weight: 500;
+    }
+</style>
+
+<div class="container">
+    <h2 style="color: SeaGreen; font-weight: bold;">Register User</h2>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger">
+            @Html.ValidationSummary(false)
+        </div>
+    }
+
+    <form asp-action="User" method="post">
+        
+        <!-- Personal Information -->
+        <div class="section-header">Personal Information</div>
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Select ID Type*</label>
+                <select asp-for="IDType" class="form-control">
+                    <option value="">Select...</option>
+                    <option value="South African ID">South African ID</option>
+                    <option value="Passport">Passport</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Enter ID Number*</label>
+                <input asp-for="NationalID" class="form-control" />
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Select Title*</label>
+                <select asp-for="Title" class="form-control">
+                    <option value="">Select...</option>
+                    <option value="Mr">Mr</option>
+                    <option value="Mrs">Mrs</option>
+                    <option value="Ms">Ms</option>
+                    <option value="Dr">Dr</option>
+                    <option value="Prof">Prof</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Enter First Name*</label>
+                <input asp-for="FirstName" class="form-control" />
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Enter Last Name*</label>
+                <input asp-for="LastName" class="form-control" />
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Enter Email*</label>
+                <input asp-for="Email" class="form-control" type="email" />
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Confirm Email*</label>
+                <input asp-for="ConfirmEmail" class="form-control" type="email" />
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Enter Province*</label>
+                <select asp-for="Province" class="form-control">
+                    <option value="">Select...</option>
+                    <option>Gauteng</option>
+                    <option>Western Cape</option>
+                    <option>KwaZulu-Natal</option>
+                    <option>Eastern Cape</option>
+                    <option>Free State</option>
+                    <option>Limpopo</option>
+                    <option>Mpumalanga</option>
+                    <option>North West</option>
+                    <option>Northern Cape</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Login Credentials -->
+        <div class="section-header">Login Credentials</div>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Enter User Name*</label>
+                <input asp-for="UserName" class="form-control" />
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Enter Password*</label>
+                <input asp-for="Password" class="form-control" type="password" />
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Confirm Password*</label>
+                <input asp-for="ConfirmPassword" class="form-control" type="password" />
+            </div>
+        </div>
+
+        <!-- Security Question -->
+        <div class="section-header">Login Security Question</div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Question*</label>
+                <input asp-for="SecurityQuestion" class="form-control" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Answer*</label>
+                <input asp-for="SecurityAnswer" class="form-control" />
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-success" style="background-color: SeaGreen; border: none; padding: 10px 30px;">Register</button>
+            <a href="/" class="btn btn-secondary" style="padding: 10px 30px;">Back</a>
+        </div>
+    </form>
+</div>
