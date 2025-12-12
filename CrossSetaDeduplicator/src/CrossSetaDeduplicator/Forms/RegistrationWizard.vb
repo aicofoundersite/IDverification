@@ -9,6 +9,7 @@ Public Class RegistrationWizard
     Private _learner As New LearnerModel()
     Private _demoMode As New DemoMode()
     Private _dedupService As New DeduplicationService()
+    Private _kycService As New KYCService()
     Private _dbHelper As New DatabaseHelper(Nothing)
     
     Public Property IsDemoNarrative As Boolean = False
@@ -21,6 +22,7 @@ Public Class RegistrationWizard
     Private txtNationalID As TextBox
     Private lblKycStatus As Label
     Private btnVerifyKyc As Button
+    Private btnScanDoc As Button
     Private btnNext1 As Button
 
     Private txtFirstName As TextBox
@@ -94,11 +96,12 @@ Public Class RegistrationWizard
         Dim lblTitle1 As New Label() With {.Text = "Step 1: Identity Verification", .Font = titleFont, .Location = New Point(20, 50), .AutoSize = True}
         Dim lblIdPrompt As New Label() With {.Text = "National ID Number:", .Location = New Point(20, 100), .AutoSize = True}
         txtNationalID = New TextBox() With {.Location = New Point(20, 125), .Width = 250}
-        btnVerifyKyc = New Button() With {.Text = "Verify ID (KYC)", .Location = New Point(280, 123), .Width = 120}
+        btnScanDoc = New Button() With {.Text = "📷 Scan Document", .Location = New Point(280, 80), .Width = 150, .BackColor = Color.LightBlue}
+        btnVerifyKyc = New Button() With {.Text = "Verify ID (KYC)", .Location = New Point(280, 123), .Width = 150}
         lblKycStatus = New Label() With {.Text = "", .Location = New Point(20, 160), .AutoSize = True, .Font = New Font("Segoe UI", 10, FontStyle.Bold)}
         btnNext1 = New Button() With {.Text = "Next >", .Location = New Point(450, 400), .Enabled = False}
 
-        pnlStep1.Controls.AddRange({lblTitle1, lblIdPrompt, txtNationalID, btnVerifyKyc, lblKycStatus, btnNext1})
+        pnlStep1.Controls.AddRange({lblTitle1, lblIdPrompt, txtNationalID, btnScanDoc, btnVerifyKyc, lblKycStatus, btnNext1})
         Me.Controls.Add(pnlStep1)
 
         ' --- Step 2 Panel ---
@@ -143,6 +146,7 @@ Public Class RegistrationWizard
         Me.Controls.Add(pnlStep3)
 
         ' Events
+        AddHandler btnScanDoc.Click, AddressOf BtnScanDoc_Click
         AddHandler btnVerifyKyc.Click, AddressOf BtnVerifyKyc_Click
         AddHandler btnNext1.Click, Sub() ShowStep(2)
         AddHandler btnBack2.Click, Sub() ShowStep(1)
@@ -169,6 +173,58 @@ Public Class RegistrationWizard
                  lblNarrativeTooltip.Text = "Step 3: Analyzing Cross-SETA database for duplicates..."
             End If
         End If
+    End Sub
+
+    Private Sub BtnScanDoc_Click(sender As Object, e As EventArgs)
+        Using openFileDialog As New OpenFileDialog()
+            openFileDialog.Title = "Select ID Document (Passport, ID Card, Driver's License)"
+            openFileDialog.Filter = "Image Files|*.jpg;*.jpeg;*.png;*.bmp"
+            
+            If openFileDialog.ShowDialog() = DialogResult.OK Then
+                lblKycStatus.Text = "Scanning Document..."
+                lblKycStatus.ForeColor = Color.Orange
+                Application.DoEvents() ' Force UI update
+                
+                Dim result = _kycService.VerifyDocument(openFileDialog.FileName)
+                
+                If result.IsSuccess Then
+                    ' Auto-populate Step 1 ID if found
+                    If result.ExtractedFields.ContainsKey("NationalID") Then
+                        txtNationalID.Text = result.ExtractedFields("NationalID")
+                    End If
+                    
+                    ' Populate Step 2 Fields (Pre-fill logic)
+                    If result.ExtractedFields.ContainsKey("FirstNames") Then txtFirstName.Text = result.ExtractedFields("FirstNames")
+                    If result.ExtractedFields.ContainsKey("Surname") Then txtLastName.Text = result.ExtractedFields("Surname")
+                    
+                    ' Try parse DOB
+                    If result.ExtractedFields.ContainsKey("DateOfBirth") Then
+                         Dim dob As DateTime
+                         If DateTime.TryParse(result.ExtractedFields("DateOfBirth"), dob) Then
+                             dtpDOB.Value = dob
+                         End If
+                    End If
+                    
+                    ' Try parse Gender
+                     If result.ExtractedFields.ContainsKey("Gender") Then
+                         Dim g = result.ExtractedFields("Gender").ToLower()
+                         If g.StartsWith("m") Then cmbGender.SelectedIndex = 0
+                         If g.StartsWith("f") Then cmbGender.SelectedIndex = 1
+                     End If
+                    
+                    lblKycStatus.Text = $"✅ Document Verified: {result.DocumentType} ({result.IssuingCountry})"
+                    lblKycStatus.ForeColor = Color.Green
+                    btnNext1.Enabled = True
+                    
+                    ' Trigger internal verify logic to set state
+                    ' _demoMode.SimulateKYC(txtNationalID.Text) ' Optional, if we want to run the other checks
+                Else
+                    lblKycStatus.Text = "❌ Verification Failed"
+                    lblKycStatus.ForeColor = Color.Red
+                    MessageBox.Show($"Document Scan Failed: {result.ErrorMessage}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                End If
+            End If
+        End Using
     End Sub
 
     Private Sub BtnVerifyKyc_Click(sender As Object, e As EventArgs)

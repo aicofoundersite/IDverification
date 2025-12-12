@@ -31,7 +31,16 @@ Before running the application, ensure you have the following installed:
         *   *Note: This step is mandatory to ensure strict SQL 2019 compliance.*
     *   **Step C (Optional):** Open and execute `db/OptimizeDatabase.sql` to add performance indexes.
 
-3.  **Application Configuration:**
+3.  **SDK Setup (KYC Verification):**
+    *   The application requires the Doubango KYC SDK for document scanning.
+    *   **Automated:** The repository structure expects the SDK at `lib/KYC-SDK`.
+    *   **Manual Setup:** If the folder is empty, run:
+        ```bash
+        git clone --depth 1 https://github.com/DoubangoTelecom/KYC-Documents-Verif-SDK.git lib/KYC-SDK
+        ```
+    *   *Note: If the SDK is missing or running on a non-Windows environment, the application will automatically default to "Simulation Mode" for demonstration purposes.*
+
+4.  **Application Configuration:**
     *   **Environment Variables (Recommended for Production):**
         *   Set `CROSS_SETA_DB_CONNECTION` to your SQL Server connection string.
         *   *Example:* `Server=192.168.1.100;Database=CrossSetaDB;User Id=sa;Password=YourPassword;`
@@ -80,10 +89,10 @@ Upon successful launch, you will see the **Main Dashboard** with:
 
 ### 2. New Learner Registration (Wizard)
 Access via **"New Learner Check"**. A 3-step wizard guides you:
-*   **Step 1: Identity Verification:** Enter a National ID. The system simulates a connection to Home Affairs (KYC).
-    *   *Try ID ending in `999` for "Expired Document".*
-    *   *Try ID `9505055000081` (Thabo Molefe) for a successful verification.*
-*   **Step 2: Details:** Enter Name, Surname, DOB. (Auto-filled in Demo Mode).
+*   **Step 1: Identity Verification:**
+    *   **Manual Entry:** Enter a National ID directly.
+    *   **📷 Scan Document:** Upload a Passport, ID Card, or Driver's License image. The system uses the **Doubango KYC SDK** to extract details automatically.
+*   **Step 2: Details:** Enter Name, Surname, DOB. (Auto-filled if Document Scan was successful).
 *   **Step 3: Deduplication:** The system checks against the SQL database.
     *   **Green:** No duplicates found.
     *   **Red:** Duplicate detected (Exact ID match).
