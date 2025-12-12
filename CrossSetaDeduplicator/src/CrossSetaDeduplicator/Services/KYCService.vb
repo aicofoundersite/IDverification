@@ -24,8 +24,9 @@ Namespace CrossSetaDeduplicator.Services
             
             ' Path to verify.exe in the cloned lib folder
             ' ROOT/lib/KYC-SDK/binaries/windows/x86_64/verify.exe
-            _sdkPath = Path.GetFullPath(Path.Combine(baseDir, "../../../../lib/KYC-SDK/binaries/windows/x86_64/verify.exe"))
-            _assetsPath = Path.GetFullPath(Path.Combine(baseDir, "../../../../lib/KYC-SDK/assets"))
+            ' Go up 6 levels from bin/Debug/net6.0-windows/ to Repo Root
+            _sdkPath = Path.GetFullPath(Path.Combine(baseDir, "../../../../../../lib/KYC-SDK/binaries/windows/x86_64/verify.exe"))
+            _assetsPath = Path.GetFullPath(Path.Combine(baseDir, "../../../../../../lib/KYC-SDK/assets"))
         End Sub
 
         Public Function VerifyDocument(imagePath As String) As KYCResult
