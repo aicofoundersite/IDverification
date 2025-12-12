@@ -54,22 +54,65 @@ Connects to an external trusted data source (simulating Department of Home Affai
 
 ## 🚀 Installation & Setup
 
-### Prerequisites
-*   Windows 10/11
-*   Visual Studio 2022
-*   SQL Server 2019 (Express or Developer)
+### 💻 1. Windows Installation (Native)
+**This is the primary supported platform for CrossSetaDeduplicator.**
 
-### Database Setup
-1.  Open **SQL Server Management Studio (SSMS)**.
-2.  Execute `db/CreateDatabase.sql` to build the schema.
-3.  Execute `db/StoredProcedures.sql` to install the required logic.
-4.  *(Optional)* Execute `db/UpdateDatabase_VerificationLog.sql` if upgrading an older version.
+#### System Requirements
+*   **OS**: Windows 10 (Version 1903+) or Windows 11.
+*   **Architecture**: x64 processor.
+*   **Framework**: .NET 6.0 Desktop Runtime (included with Visual Studio 2022).
+*   **Database**: SQL Server 2019 Express or Developer Edition.
 
-### Running the Application
-1.  Open `src/CrossSetaDeduplicator.sln` in Visual Studio.
-2.  Check `DatabaseHelper.vb` or set the `CROSS_SETA_DB_CONNECTION` environment variable to point to your SQL instance.
-3.  Run the application (**F5**).
-4.  **Credentials**: No login required for the prototype (Windows Auth).
+#### Step-by-Step Installation
+1.  **Install Visual Studio 2022**:
+    *   Download from [visualstudio.microsoft.com](https://visualstudio.microsoft.com/).
+    *   During installation, select the workload: **".NET desktop development"**.
+2.  **Install SQL Server**:
+    *   Install SQL Server 2019 Express.
+    *   Install **SQL Server Management Studio (SSMS)** for easy database management.
+3.  **Clone the Repository**:
+    ```powershell
+    git clone https://github.com/mlx-ventures/IDverification.git
+    cd IDverification
+    ```
+4.  **Database Configuration**:
+    *   Open SSMS and connect to `.\SQLEXPRESS` (or `localhost`).
+    *   Open `db/CreateDatabase.sql` and click **Execute**.
+    *   Open `db/StoredProcedures.sql` and click **Execute**.
+5.  **Run the Application**:
+    *   Open `src/CrossSetaDeduplicator.sln` in Visual Studio.
+    *   Press **F5** to build and run.
+
+#### Verification
+*   The **Main Dashboard** should launch without errors.
+*   The "System Status" at the bottom should show "Connected".
+
+---
+
+### 🍎 2. macOS Installation (Virtualization)
+**Note:** As a VB.NET Windows Forms application, this software **does not run natively on macOS**. You must use Windows virtualization.
+
+#### System Requirements
+*   **OS**: macOS Catalina (10.15) or newer.
+*   **Hardware**: Intel or Apple Silicon (M1/M2/M3) Mac with at least 8GB RAM.
+*   **Software**: Parallels Desktop, VMWare Fusion, or UTM (Free).
+
+#### Step-by-Step Installation
+1.  **Set up a Windows Virtual Machine**:
+    *   **Apple Silicon (M1/M2/M3)**: Download and install **Windows 11 ARM64** using Parallels or UTM.
+    *   **Intel Macs**: Install standard Windows 10/11 x64.
+2.  **Configure the VM**:
+    *   Ensure the VM has network access.
+    *   Install **Visual Studio 2022 for Windows** (NOT Visual Studio for Mac) inside the VM.
+3.  **Proceed with Windows Installation**:
+    *   Once inside the Windows environment, follow the **Windows Installation** guide above exactly as written.
+
+#### Troubleshooting Common macOS/VM Issues
+*   **SQL Server on ARM (M1/M2)**: SQL Server 2019 does not run natively on Windows ARM.
+    *   *Solution*: Use **Azure SQL Edge** (Docker) or connect to a remote SQL Server instance.
+    *   *Workaround*: For this Hackathon prototype, the application can run in "Demo Mode" without a local DB if configured in `DatabaseHelper.vb`.
+
+---
 
 ---
 
