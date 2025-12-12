@@ -1,5 +1,6 @@
 Imports System.IO
 Imports System.Text.Json
+Imports System.Text.Json.Nodes
 Imports System.Threading.Tasks
 Imports CrossSetaDeduplicator.DataAccess
 Imports CrossSetaDeduplicator.Services.External
@@ -145,12 +146,43 @@ Namespace CrossSetaDeduplicator.Services
             Return File.ReadAllLines(_offlineQueuePath).Length
         End Function
         
-        Public Sub ProcessOfflineQueue()
-            If Not File.Exists(_offlineQueuePath) Then Return
+        Public Async Function ProcessOfflineQueueAsync() As Task(Of Integer)
+            If Not File.Exists(_offlineQueuePath) Then Return 0
             
-            ' In a real app, we would read, process, and clear.
-            ' For demo, we just clear it and assume processed.
+            Dim lines = File.ReadAllLines(_offlineQueuePath)
+            Dim processedCount As Integer = 0
+            
+            For Each line In lines
+                If String.IsNullOrWhiteSpace(line) Then Continue For
+                
+                Try
+                    ' Deserialize
+                    ' We used an anonymous type to serialize, so we need to parse carefully or use a helper class.
+                    ' Using JsonNode for flexibility.
+                    Dim node = JsonNode.Parse(line)
+                    Dim id = node("NationalID").ToString()
+                    Dim fn = node("FirstName").ToString()
+                    Dim sn = node("Surname").ToString()
+                    
+                    ' Process: Call VerifyCitizenAsync (Recursive? No, simulate processing)
+                    ' In a real scenario, we would re-verify. Here we just log that we processed it.
+                    Dim startTime = DateTime.Now
+                    
+                    ' Verify against our Mock Client
+                    Dim haResponse As HomeAffairsApiResponse = Await _client.GetCitizenDetailsAsync(id)
+                    Dim status = If(haResponse.Status = "Alive", "Verified", haResponse.Status)
+                    
+                    _dbHelper.LogExternalVerification(id, "HomeAffairs_Queue", status, "Processed from Offline Queue", startTime, "System_Auto")
+                    processedCount += 1
+                    
+                Catch ex As Exception
+                    ' Log error?
+                End Try
+            Next
+            
+            ' Clear queue after processing
             File.Delete(_offlineQueuePath)
-        End Sub
+            Return processedCount
+        End Function
     End Class
 End Namespace

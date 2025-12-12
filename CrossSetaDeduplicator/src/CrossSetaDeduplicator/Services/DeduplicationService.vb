@@ -34,7 +34,8 @@ Public Class DeduplicationService
                 result.MatchType = "Exact"
                 result.MatchScore = 100
                 result.MatchedLearner = existingLearner
-                result.Message = "Exact match found on National ID."
+                result.FoundInSeta = existingLearner.SetaName
+                result.Message = $"Exact match found on National ID in {existingLearner.SetaName}."
                 
                 ' Log it
                 _dbHelper.LogDuplicateCheck(learner.NationalID, existingLearner.LearnerID, 100, "Exact")
@@ -57,7 +58,8 @@ Public Class DeduplicationService
                     result.MatchType = "Fuzzy"
                     result.MatchScore = score
                     result.MatchedLearner = existingLearner
-                    result.Message = $"Potential fuzzy match found on Name. Score: {score}"
+                    result.FoundInSeta = existingLearner.SetaName
+                    result.Message = $"Potential fuzzy match found on Name in {existingLearner.SetaName}. Score: {score}"
                     
                     _dbHelper.LogDuplicateCheck(learner.NationalID, existingLearner.LearnerID, score, "Fuzzy")
                     Return result

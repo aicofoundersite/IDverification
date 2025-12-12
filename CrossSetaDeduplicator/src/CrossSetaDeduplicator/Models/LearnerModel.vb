@@ -8,4 +8,5 @@ Public Class LearnerModel
     Public Property Role As String ' Learner, Assessor, Moderator
     Public Property BiometricHash As String
     Public Property IsVerified As Boolean
+    Public Property SetaName As String
 End Class

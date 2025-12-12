@@ -72,7 +72,7 @@ Connects to an external trusted data source (simulating Department of Home Affai
     *   Install **SQL Server Management Studio (SSMS)** for easy database management.
 3.  **Clone the Repository**:
     ```powershell
-    git clone https://github.com/mlx-ventures/IDverification.git
+    git clone https://github.com/aicofoundersite/IDverification
     cd IDverification
     ```
 4.  **Database Configuration**:

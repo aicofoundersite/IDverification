@@ -3,6 +3,7 @@ Public Class DuplicateResult
     Public Property MatchType As String ' "Exact", "Fuzzy", "None"
     Public Property MatchScore As Integer ' 0-100
     Public Property MatchedLearner As LearnerModel
+    Public Property FoundInSeta As String
     Public Property Message As String
 
     Public Sub New()

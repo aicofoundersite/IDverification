@@ -60,16 +60,18 @@ Module TestProgram
              .FirstName = "TestLearner",
              .LastName = "User",
              .Role = "Assessor", ' Trying to register as Assessor now
-             .IsVerified = True
+             .IsVerified = True,
+             .SetaName = "CHIETA" ' Attempting to register from CHIETA
         }
         
-        Console.WriteLine($"Attempting to register ASSESSOR with existing LEARNER ID {duplicateId}...")
+        Console.WriteLine($"Attempting to register ASSESSOR with existing LEARNER ID {duplicateId} from CHIETA...")
         Try
             Dim dupResult = service.CheckForDuplicates(duplicateUser)
              If dupResult.IsDuplicate Then
                  Console.WriteLine($"   -> SUCCESS: Duplicate Detected across roles!")
                  Console.WriteLine($"      Match Type: {dupResult.MatchType}")
                  Console.WriteLine($"      Existing Record Role: {dupResult.MatchedLearner.Role}")
+                 Console.WriteLine($"      Found In SETA: {dupResult.FoundInSeta}")
             Else
                  Console.WriteLine($"   -> FAILURE: Duplicate not detected.")
             End If

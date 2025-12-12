@@ -35,6 +35,7 @@ Public Class DatabaseHelper
             cmd.Parameters.AddWithValue("@Role", If(learner.Role, "Learner"))
             cmd.Parameters.AddWithValue("@BiometricHash", If(learner.BiometricHash, DBNull.Value))
             cmd.Parameters.AddWithValue("@IsVerified", learner.IsVerified)
+            cmd.Parameters.AddWithValue("@SetaName", If(String.IsNullOrEmpty(learner.SetaName), "W&RSETA", learner.SetaName))
 
             conn.Open()
             cmd.ExecuteNonQuery()
@@ -65,6 +66,10 @@ Public Class DatabaseHelper
                     learner.Role = If(IsDBNull(reader("Role")), "Learner", reader("Role").ToString())
                     learner.BiometricHash = If(IsDBNull(reader("BiometricHash")), Nothing, reader("BiometricHash").ToString())
                     learner.IsVerified = Convert.ToBoolean(reader("IsVerified"))
+                    ' Safe check for SetaName in case DB wasn't updated yet or column is missing in older versions
+                    If reader.GetSchemaTable().Select("ColumnName = 'SetaName'").Length > 0 Then
+                         learner.SetaName = If(IsDBNull(reader("SetaName")), "Unknown", reader("SetaName").ToString())
+                    End If
                     potentialDuplicates.Add(learner)
                 End While
             End Using
@@ -93,6 +98,10 @@ Public Class DatabaseHelper
                     learner.Role = If(IsDBNull(reader("Role")), "Learner", reader("Role").ToString())
                     learner.BiometricHash = If(IsDBNull(reader("BiometricHash")), Nothing, reader("BiometricHash").ToString())
                     learner.IsVerified = Convert.ToBoolean(reader("IsVerified"))
+                    ' Safe check for SetaName
+                    If reader.GetSchemaTable().Select("ColumnName = 'SetaName'").Length > 0 Then
+                        learner.SetaName = If(IsDBNull(reader("SetaName")), "Unknown", reader("SetaName").ToString())
+                    End If
                     learners.Add(learner)
                 End While
             End Using

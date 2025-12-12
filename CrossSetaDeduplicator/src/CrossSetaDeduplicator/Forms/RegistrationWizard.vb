@@ -39,6 +39,7 @@ Public Class RegistrationWizard
     Private dtpDOB As DateTimePicker
     Private cmbGender As ComboBox
     Private cmbRole As ComboBox
+    Private cmbSeta As ComboBox ' New Control for SETA selection
     Private btnNext2 As Button
     Private btnBack2 As Button
 
@@ -115,6 +116,12 @@ Public Class RegistrationWizard
         pnlStep1 = New Panel() With {.Dock = DockStyle.Fill, .Visible = True}
         Dim lblTitle1 As New Label() With {.Text = "Step 1: Identity Verification", .Font = titleFont, .Location = New Point(20, 20), .AutoSize = True}
         
+        Dim lblSeta As New Label() With {.Text = "Operating SETA:", .Location = New Point(300, 20), .AutoSize = True, .Font = New Font("Segoe UI", 9, FontStyle.Bold)}
+        cmbSeta = New ComboBox() With {.Location = New Point(400, 18), .Width = 150, .DropDownStyle = ComboBoxStyle.DropDownList}
+        ' Scalability Note: In production, these items should be populated from the 'SetaRegistry' table in the database.
+        cmbSeta.Items.AddRange({"W&RSETA", "CHIETA", "MERSETA", "AGRISETA", "BANKSETA"})
+        cmbSeta.SelectedIndex = 0
+
         Dim lblIdPrompt As New Label() With {.Text = "National ID Number:", .Location = New Point(20, 60), .AutoSize = True}
         txtNationalID = New MaskedTextBox() With {.Location = New Point(20, 80), .Width = 250, .Mask = "0000000000000", .PromptChar = "_"c}
         
@@ -140,7 +147,7 @@ Public Class RegistrationWizard
 
         btnNext1 = New Button() With {.Text = "Next >", .Location = New Point(450, 400), .Enabled = False}
 
-        pnlStep1.Controls.AddRange({lblTitle1, lblIdPrompt, txtNationalID, lblFn, txtFirstName, lblLn, txtLastName, btnScanDoc, btnCaptureSelfie, btnVerifyKyc, btnVerifyFace, chkConsent, chkOffline, lblKycStatus, lblFaceMatchStatus, btnNext1})
+        pnlStep1.Controls.AddRange({lblTitle1, lblSeta, cmbSeta, lblIdPrompt, txtNationalID, lblFn, txtFirstName, lblLn, txtLastName, btnScanDoc, btnCaptureSelfie, btnVerifyKyc, btnVerifyFace, chkConsent, chkOffline, lblKycStatus, lblFaceMatchStatus, btnNext1})
         Me.Controls.Add(pnlStep1)
 
         ' --- Step 2 Panel ---
@@ -193,7 +200,7 @@ Public Class RegistrationWizard
         AddHandler chkOffline.CheckedChanged, AddressOf UpdateSystemStatus
     End Sub
     
-    Private Sub UpdateSystemStatus(Optional sender As Object = Nothing, Optional e As EventArgs = Nothing)
+    Private Async Sub UpdateSystemStatus(Optional sender As Object = Nothing, Optional e As EventArgs = Nothing)
         If chkOffline.Checked Then
             lblSystemStatus.Text = "System Status: OFFLINE (Queueing Mode)"
             lblSystemStatus.ForeColor = Color.Red
@@ -202,6 +209,12 @@ Public Class RegistrationWizard
             lblSystemStatus.Text = "System Status: ONLINE (Connected to Home Affairs)"
             lblSystemStatus.ForeColor = Color.Green
             statusStrip.BackColor = SystemColors.Control
+            
+            ' Process Offline Queue if it exists
+            Dim count = Await _homeAffairsService.ProcessOfflineQueueAsync()
+            If count > 0 Then
+                MessageBox.Show($"System is back online. {count} queued verification requests have been processed automatically.", "Offline Queue Processed", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            End If
         End If
     End Sub
 
@@ -369,6 +382,7 @@ Public Class RegistrationWizard
         _learner.Gender = If(cmbGender.SelectedItem IsNot Nothing, cmbGender.SelectedItem.ToString(), "")
         _learner.Role = If(cmbRole.SelectedItem IsNot Nothing, cmbRole.SelectedItem.ToString(), "Learner")
         _learner.IsVerified = True
+        _learner.SetaName = If(cmbSeta.SelectedItem IsNot Nothing, cmbSeta.SelectedItem.ToString(), "W&RSETA")
 
         ' Use Service for logic if needed, but currently logic is in DedupService
         ' _learnerService.CheckForDuplicates(_learner) could be a wrapper
@@ -387,7 +401,8 @@ Public Class RegistrationWizard
                 .ID = result.MatchedLearner.NationalID,
                 .Name = result.MatchedLearner.FirstName & " " & result.MatchedLearner.LastName,
                 .Score = result.MatchScore,
-                .Type = result.MatchType
+                .Type = result.MatchType,
+                .FoundIn = result.FoundInSeta
             })
             dgvMatches.DataSource = list
             btnFinish.Text = "Cancel"
