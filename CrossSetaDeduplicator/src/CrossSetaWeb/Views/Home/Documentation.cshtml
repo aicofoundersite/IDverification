@@ -6,136 +6,174 @@
     <div class="row">
         <div class="col-md-3">
             <nav id="doc-nav" class="nav flex-column sticky-top" style="top: 80px;">
-                <a class="nav-link text-success fw-bold" href="#overview">Overview</a>
-                <a class="nav-link text-secondary" href="#features">Key Features</a>
+                <a class="nav-link text-success fw-bold" href="#core-requirements">Core Requirements</a>
+                <a class="nav-link text-secondary" href="#bonus-features">Bonus Features</a>
                 <a class="nav-link text-secondary" href="#architecture">Architecture</a>
-                <a class="nav-link text-secondary" href="#getting-started">Getting Started</a>
-                <a class="nav-link text-secondary" href="#api-reference">API Reference</a>
+                <a class="nav-link text-secondary" href="#verification-logic">Traffic Light Logic</a>
+                <a class="nav-link text-secondary" href="#demo-data">Demo Data</a>
+                <a class="nav-link text-secondary" href="#security">Security & Compliance</a>
+                <a class="nav-link text-secondary" href="#reporting">Reporting</a>
             </nav>
         </div>
         
         <div class="col-md-9">
             <h1 class="display-4 mb-4 text-success border-bottom pb-2">Cross-SETA Deduplication System</h1>
             
-            <section id="overview" class="mb-5">
-                <h2>Overview</h2>
-                <p class="lead">
-                    The Cross-SETA Deduplication System is a robust web platform designed to eliminate duplicate learner registrations across multiple Sector Education and Training Authorities (SETAs).
-                </p>
-                <p>
-                    By leveraging real-time validation against Department of Home Affairs data and implementing advanced fuzzy matching algorithms, the system ensures data integrity and prevents fraudulent or erroneous "double-dipping" of grant funding.
-                </p>
+            <section id="core-requirements" class="mb-5">
+                <h2 class="text-primary"><i class="bi bi-check-circle-fill"></i> Core Requirements (Must-Haves)</h2>
+                <div class="card mb-3 shadow-sm">
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">
+                                <strong>Input Validation:</strong> Strict validation for South African ID numbers (Luhn Algorithm), Name, and Surname formats.
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Real-Time Verification:</strong> Instant connection to external data sources (Simulated Home Affairs) to verify identity.
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Audit Trail:</strong> Comprehensive logging of every single verification attempt, including user, timestamp, and result.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
             </section>
 
-            <section id="features" class="mb-5">
-                <h2>Key Features</h2>
-                
-                <div class="card mb-3 border-success">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0">1. Deduplication Engine</h5>
-                    </div>
+            <section id="bonus-features" class="mb-5">
+                <h2 class="text-info"><i class="bi bi-star-fill"></i> Bonus Points for Innovation</h2>
+                <div class="card mb-3 shadow-sm">
                     <div class="card-body">
-                        <p>Prevents a learner from registering for multiple concurrent learnerships across different SETAs.</p>
-                        <ul>
-                            <li><strong>Real-time Check:</strong> Validates ID numbers against the central database during registration.</li>
-                            <li><strong>Conflict Resolution:</strong> Flags potential duplicates for manual review.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="card mb-3 border-success">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0">2. Home Affairs Validation</h5>
-                    </div>
-                    <div class="card-body">
-                        <p>Verifies the authenticity of learner identities against simulated Home Affairs records.</p>
-                        <ul>
-                            <li><strong>Identity Verification:</strong> Confirms First Name, Surname, and Date of Birth match the ID number.</li>
-                            <li><strong>Status Check:</strong> Flags deceased individuals to prevent fraud.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="card mb-3 border-success">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0">3. Bulk Processing</h5>
-                    </div>
-                    <div class="card-body">
-                        <p>Allows SETA administrators to upload large datasets for batch processing.</p>
-                        <ul>
-                            <li><strong>CSV Import:</strong> Supports standardized CSV templates for learner data.</li>
-                            <li><strong>Async Validation:</strong> Processes records in the background with progress tracking.</li>
-                            <li><strong>Detailed Reporting:</strong> Generates reports on successful imports and validation failures.</li>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">
+                                <strong>Offline Capability:</strong> Queueing and retry logic for verifications during system downtimes.
+                            </li>
+                            <li class="list-group-item">
+                                <strong>User Experience (UX):</strong> Intuitive "Traffic Light" status badges (Green/Yellow/Red) for immediate visual feedback.
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Security:</strong> Full POPIA compliance with PII masking and secure data handling.
+                            </li>
                         </ul>
                     </div>
                 </div>
             </section>
 
             <section id="architecture" class="mb-5">
-                <h2>System Architecture</h2>
-                <p>The solution is built using a modern, scalable stack:</p>
-                <table class="table table-striped">
-                    <thead>
+                <h2>1. Architecture Expectations</h2>
+                <p>The system implements a modular <strong>N-Tier structure</strong> to ensure separation of concerns:</p>
+                <ul>
+                    <li><strong>Frontend (Presentation):</strong> ASP.NET Core MVC (C#) handling UI and user interaction.</li>
+                    <li><strong>Logic (Business):</strong> VB.NET Class Library (`CrossSetaLogic`) encapsulating all validation and business rules.</li>
+                    <li><strong>Data (Persistence):</strong> SQL Server accessed via ADO.NET/EF Core with parameterized queries.</li>
+                </ul>
+            </section>
+
+            <section id="verification-logic" class="mb-5">
+                <h2>2. Verification Logic: The "Traffic Light" Protocol</h2>
+                <p>We apply the Interceptor Pattern to categorize verification results:</p>
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="card bg-success text-white mb-3">
+                            <div class="card-body">
+                                <h3>Green</h3>
+                                <p><strong>Verified</strong></p>
+                                <small>ID exists, Names match, Citizen is Alive.</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-warning text-dark mb-3">
+                            <div class="card-body">
+                                <h3>Yellow</h3>
+                                <p><strong>Review</strong></p>
+                                <small>Surname Mismatch or minor discrepancy.</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-danger text-white mb-3">
+                            <div class="card-body">
+                                <h3>Red</h3>
+                                <p><strong>Invalid/Fraud</strong></p>
+                                <small>ID Not Found, Deceased, or Invalid Format.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="duplicate-checks" class="mb-5">
+                <h2>3. Duplicate Learner Check Rules</h2>
+                <p>A <strong>Pre-Registration Check</strong> is performed before committing any data to the local W&RSETA database. If a learner exists in another SETA's records, the registration is flagged.</p>
+            </section>
+
+            <section id="tech-stack" class="mb-5">
+                <h2>4. Technology Options</h2>
+                <p><strong>Language:</strong> VB.NET (Logic) & C# (Web) - Demonstrating interoperability.</p>
+                <p><strong>Database:</strong> Microsoft SQL Server.</p>
+            </section>
+
+            <section id="demo-data" class="mb-5">
+                <h2 class="text-primary border-bottom pb-2">Testing Scenarios & Demo IDs</h2>
+                <p>Use these IDs to test the specific "Traffic Light" scenarios in the Bulk Registration or Single Registration forms.</p>
+                
+                <table class="table table-bordered table-hover">
+                    <thead class="table-dark">
                         <tr>
-                            <th>Component</th>
-                            <th>Technology</th>
-                            <th>Description</th>
+                            <th>Scenario</th>
+                            <th>Status</th>
+                            <th>National ID</th>
+                            <th>Surname Input</th>
+                            <th>Expected Result</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td><strong>Frontend</strong></td>
-                            <td>ASP.NET Core MVC</td>
-                            <td>Responsive web interface with Bootstrap 5.</td>
+                            <td><strong>Valid Citizen</strong></td>
+                            <td><span class="badge bg-success">Green</span></td>
+                            <td><code>0002080806082</code></td>
+                            <td><code>Makaula</code></td>
+                            <td>Verification Successful.</td>
                         </tr>
                         <tr>
-                            <td><strong>Core Logic</strong></td>
-                            <td>Visual Basic .NET (VB.NET)</td>
-                            <td>Business rules, validation logic, and data processing encapsulated in a separate class library (`CrossSetaLogic`).</td>
+                            <td><strong>Surname Mismatch</strong></td>
+                            <td><span class="badge bg-warning text-dark">Yellow</span></td>
+                            <td><code>0002080806082</code></td>
+                            <td><code>Smith</code></td>
+                            <td>Flagged for Review (Surname does not match Home Affairs).</td>
                         </tr>
                         <tr>
-                            <td><strong>Database</strong></td>
-                            <td>SQL Server (Azure/Local)</td>
-                            <td>Relational data storage for Learners, Users, and Activity Logs.</td>
+                            <td><strong>Deceased Citizen</strong></td>
+                            <td><span class="badge bg-danger">Red</span></td>
+                            <td><code>0001010000001</code></td>
+                            <td><em>Any</em></td>
+                            <td>Blocked. Citizen marked as Deceased.</td>
                         </tr>
                         <tr>
-                            <td><strong>Authentication</strong></td>
-                            <td>Supabase Auth</td>
-                            <td>Secure user management and JWT-based authentication.</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Deployment</strong></td>
-                            <td>Fly.io (Docker)</td>
-                            <td>Containerized deployment for high availability and easy scaling.</td>
+                            <td><strong>ID Not Found</strong></td>
+                            <td><span class="badge bg-danger">Red</span></td>
+                            <td><code>9999999999999</code></td>
+                            <td><em>Any</em></td>
+                            <td>Blocked. Identity Number not found in source.</td>
                         </tr>
                     </tbody>
                 </table>
             </section>
 
-            <section id="getting-started" class="mb-5">
-                <h2>Getting Started</h2>
-                
-                <h5>Prerequisites</h5>
+            <section id="security" class="mb-5">
+                <h2>8. Security & Compliance</h2>
                 <ul>
-                    <li>.NET 8.0 SDK or later</li>
-                    <li>SQL Server</li>
-                    <li>Supabase Account</li>
+                    <li><strong>POPIA Compliance:</strong> PII is masked in admin views.</li>
+                    <li><strong>Secure Config:</strong> No hardcoded API keys; credentials managed via Environment Variables.</li>
+                    <li><strong>Input Sanitization:</strong> All inputs sanitized to prevent SQL Injection and XSS.</li>
                 </ul>
-
-                <h5>Installation</h5>
-                <pre class="bg-light p-3 rounded"><code>git clone https://github.com/your-repo/IDverification.git
-cd CrossSetaDeduplicator
-dotnet restore
-dotnet run --project src/CrossSetaWeb/CrossSetaWeb.csproj</code></pre>
             </section>
-            
-            <section id="api-reference" class="mb-5">
-                <h2>API Reference</h2>
-                <p>The system exposes several REST endpoints for integration:</p>
+
+            <section id="reporting" class="mb-5">
+                <h2>9. Reporting Requirements</h2>
+                <p>The <strong>Administrative Dashboard</strong> visualizes:</p>
                 <ul>
-                    <li><code>GET /api/Verification/{id}</code> - Check if a learner exists in the local database.</li>
-                    <li><code>GET /api/Verification/home-affairs/{id}</code> - Verify an ID against Home Affairs records.</li>
-                    <li><code>POST /api/Import/trigger</code> - Trigger a bulk import from an external source.</li>
+                    <li>Total Verifications vs. Failures.</li>
+                    <li>Exportable lists of "Blocked" or "Flagged" attempts for audit purposes.</li>
                 </ul>
             </section>
         </div>
