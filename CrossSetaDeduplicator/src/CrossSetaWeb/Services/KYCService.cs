@@ -15,7 +15,7 @@ namespace CrossSetaWeb.Services
         public string ExtractedSurname { get; set; }
     }
 
-    public class KYCService
+    public class KYCService : IKYCService
     {
         private readonly string _uploadPath;
 

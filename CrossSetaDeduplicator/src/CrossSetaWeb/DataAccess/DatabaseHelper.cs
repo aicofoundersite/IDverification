@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace CrossSetaWeb.DataAccess
 {
-    public class DatabaseHelper
+    public class DatabaseHelper : IDatabaseHelper
     {
         private string _connectionString = "Server=localhost;Database=CrossSetaDB;Trusted_Connection=True;TrustServerCertificate=True;";
 
@@ -304,6 +304,26 @@ namespace CrossSetaWeb.DataAccess
                 conn.Open();
                 cmd.ExecuteNonQuery();
             }
+        }
+
+        public List<LearnerModel> GetAllLearners()
+        {
+            var learners = new List<LearnerModel>();
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                string query = "SELECT * FROM Learners";
+                SqlCommand cmd = new SqlCommand(query, conn);
+
+                conn.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        learners.Add(MapReaderToLearner(reader));
+                    }
+                }
+            }
+            return learners;
         }
 
         public LearnerModel? GetLearnerByNationalID(string nationalID)

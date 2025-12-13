@@ -6,13 +6,13 @@ using CrossSetaWeb.Models;
 
 namespace CrossSetaWeb.Services
 {
-    public class UserService
+    public class UserService : IUserService
     {
-        private readonly DatabaseHelper _dbHelper;
+        private readonly IDatabaseHelper _dbHelper;
 
-        public UserService()
+        public UserService(IDatabaseHelper dbHelper)
         {
-            _dbHelper = new DatabaseHelper();
+            _dbHelper = dbHelper;
         }
 
         public void RegisterUser(UserModel user, string password)

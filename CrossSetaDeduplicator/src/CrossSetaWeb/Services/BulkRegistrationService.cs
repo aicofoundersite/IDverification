@@ -11,12 +11,12 @@ using Microsoft.Extensions.Logging;
 
 namespace CrossSetaWeb.Services
 {
-    public class BulkRegistrationService
+    public class BulkRegistrationService : IBulkRegistrationService
     {
-        private readonly DatabaseHelper _dbHelper;
+        private readonly IDatabaseHelper _dbHelper;
         private readonly ILogger<BulkRegistrationService> _logger;
 
-        public BulkRegistrationService(DatabaseHelper dbHelper, ILogger<BulkRegistrationService> logger)
+        public BulkRegistrationService(IDatabaseHelper dbHelper, ILogger<BulkRegistrationService> logger)
         {
             _dbHelper = dbHelper;
             _logger = logger;
@@ -231,7 +231,7 @@ namespace CrossSetaWeb.Services
             return Regex.IsMatch(phone, @"^(\+27|0)[0-9\s]{8,15}$");
         }
 
-        private bool IsValidLuhn(string id)
+        public static bool IsValidLuhn(string id)
         {
             if (string.IsNullOrEmpty(id)) return false;
             id = id.Trim();

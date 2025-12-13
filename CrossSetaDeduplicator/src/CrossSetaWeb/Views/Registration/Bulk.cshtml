@@ -1,5 +1,5 @@
 @{
-    ViewData["Title"] = "Bulk Learner Registration";
+    ViewData["Title"] = "Bulk Validation";
 }
 
 <style>
@@ -18,8 +18,19 @@
 </style>
 
 <div class="container">
-    <h2 style="color: SeaGreen; font-weight: bold;">Bulk Learner Registration</h2>
-    <p class="text-muted">Use this page to upload CSV files for bulk learner registration. This is intended for SETAs, Companies, and Training Providers.</p>
+    <h2 style="color: SeaGreen; font-weight: bold;">Bulk Validation</h2>
+    <p class="text-muted">Validate your learner database against Home Affairs records or upload new bulk files for registration and validation.</p>
+
+    @if (TempData["ValidationSuccess"] != null)
+    {
+        <div class="alert alert-info">
+            <strong>Validation Results:</strong> @TempData["ValidationMessage"]
+            <br/>
+            <a href="@Url.Action("DownloadReport", "Registration", new { fileName = TempData["ValidationReport"] })" class="btn btn-info btn-sm mt-2">
+                <i class="bi bi-download"></i> Download Validation Report
+            </a>
+        </div>
+    }
 
     @if (TempData["SuccessMessage"] != null)
     {
@@ -48,9 +59,107 @@
         </div>
     }
 
-    <form asp-action="Bulk" method="post" enctype="multipart/form-data">
+    <!-- Database Validation Section (Moved to Top) -->
+    <div class="section-header">Database Validation</div>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card mb-4 h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Run Validation Report</h5>
+                    <p class="card-text">Validate all learners against the current Reference Data (Test Scenarios).</p>
+                    <p class="text-muted small">Checks: Deceased, Mismatch, Invalid ID, Not Found.</p>
+                    
+                    <form id="validationForm" onsubmit="event.preventDefault(); startValidation();">
+                        <button type="submit" id="startBtn" class="btn btn-primary w-100" style="background-color: SeaGreen; border-color: SeaGreen;">Run Database Validation</button>
+                    </form>
+                    
+                    <div id="progressSection" style="display:none; margin-top: 15px;">
+                         <p id="statusText" class="text-center font-weight-bold">Starting...</p>
+                         <div class="progress" style="height: 25px;">
+                             <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%">0%</div>
+                         </div>
+                    </div>
+
+                    <div id="resultSection" style="display:none; margin-top: 15px;" class="alert alert-success">
+                        <strong>Validation Complete!</strong> <br/>
+                        <span id="resultMessage"></span>
+                        <br/>
+                        <a id="downloadLink" href="#" class="btn btn-info btn-sm mt-2"><i class="bi bi-download"></i> Download Report</a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function startValidation() {
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('progressSection').style.display = 'block';
+            document.getElementById('resultSection').style.display = 'none';
+
+            fetch('@Url.Action("ValidateDatabase")', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.jobId) {
+                        pollProgress(data.jobId);
+                    } else {
+                        alert("Failed to start validation.");
+                        document.getElementById('startBtn').disabled = false;
+                    }
+                })
+                .catch(err => {
+                    alert("Error starting validation: " + err);
+                    document.getElementById('startBtn').disabled = false;
+                });
+        }
+
+        function pollProgress(jobId) {
+            const interval = setInterval(() => {
+                fetch('@Url.Action("GetValidationStatus")?jobId=' + jobId)
+                    .then(response => response.json())
+                    .then(data => {
+                        const pct = data.percentage + '%';
+                        document.getElementById('progressBar').style.width = pct;
+                        document.getElementById('progressBar').innerText = pct;
+                        document.getElementById('statusText').innerText = data.status;
+
+                        if (data.isComplete) {
+                            clearInterval(interval);
+                            showResult(data.result);
+                            document.getElementById('startBtn').disabled = false;
+                            document.getElementById('progressBar').classList.remove('progress-bar-animated');
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Polling error", err);
+                    });
+            }, 1000);
+        }
+
+        function showResult(result) {
+            document.getElementById('progressSection').style.display = 'none';
+            document.getElementById('resultSection').style.display = 'block';
+            
+            document.getElementById('resultMessage').innerText = 
+                `Processed ${result.totalRecords} Learners. Stats: Valid: ${result.validCount} | Deceased: ${result.deceasedCount} | Mismatch: ${result.surnameMismatchCount} | Not Found: ${result.notFoundCount}`;
+            
+            if (result.reportFileName) {
+                const link = document.getElementById('downloadLink');
+                link.href = '@Url.Action("DownloadReport")?fileName=' + result.reportFileName;
+                link.style.display = 'inline-block';
+            } else {
+                document.getElementById('downloadLink').style.display = 'none';
+            }
+        }
+    </script>
+
+    <hr class="my-5" />
+
+    <form asp-action="Bulk" method="post" enctype="multipart/form-data" id="bulkUploadForm">
         
-        <div class="section-header">Upload CSV File</div>
+        <div class="section-header">Bulk Upload & Registration</div>
         
         <div class="row">
             <div class="col-md-12 mb-3">
@@ -78,7 +187,7 @@
 
         <div class="mt-4">
             <button type="submit" class="btn btn-primary" style="background-color: SeaGreen; border-color: SeaGreen;">Upload and Process</button>
-            <a href="@Url.Action("Learner", "Registration")" class="btn btn-secondary">Cancel</a>
+            <a href="@Url.Action("Learner", "Registration")" class="btn btn-secondary" style="background-color: SeaGreen; border-color: SeaGreen; color: white;">Cancel</a>
         </div>
     </form>
 </div>
@@ -88,16 +197,17 @@
     <div class="spinner-border text-success" role="status" style="width: 4rem; height: 4rem;">
         <span class="visually-hidden">Loading...</span>
     </div>
-    <h3 class="mt-3 text-success" style="color: SeaGreen !important;">Processing Bulk Upload...</h3>
-    <p class="text-muted">Please wait while we validate and process your records.</p>
+    <h3 class="mt-3 text-success" style="color: SeaGreen !important;">Processing...</h3>
+    <p class="text-muted">Please wait while we process your request.</p>
     <p class="text-muted small">Do not close or refresh this page.</p>
 </div>
 
 <script>
-    document.querySelector('form').addEventListener('submit', function(e) {
+    document.getElementById('bulkUploadForm').addEventListener('submit', function(e) {
         // Simple client-side validation check before showing spinner
         var fileInput = document.querySelector('input[type="file"]');
         if (fileInput.files.length > 0) {
+            document.getElementById('loadingOverlay').querySelector('h3').innerText = 'Processing Bulk Upload...';
             document.getElementById('loadingOverlay').style.display = 'flex';
         }
     });

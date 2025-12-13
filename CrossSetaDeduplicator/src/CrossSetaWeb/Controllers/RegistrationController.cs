@@ -9,17 +9,32 @@ namespace CrossSetaWeb.Controllers
 {
     public class RegistrationController : Controller
     {
-        private readonly UserService _userService;
-        private readonly DatabaseHelper _dbHelper;
-        private readonly KYCService _kycService;
-        private readonly BulkRegistrationService _bulkService;
+        private readonly IUserService _userService;
+        private readonly IDatabaseHelper _dbHelper;
+        private readonly IKYCService _kycService;
+        private readonly IBulkRegistrationService _bulkService;
+        private readonly IDatabaseValidationService _validationService;
+        private readonly IHomeAffairsImportService _importService;
 
-        public RegistrationController(KYCService kycService, BulkRegistrationService bulkService)
+        private readonly IValidationProgressService _progressService;
+        private readonly RegistrationController _controller; // Self-ref not needed, just for context
+
+        public RegistrationController(
+            IUserService userService, 
+            IDatabaseHelper dbHelper,
+            IKYCService kycService,
+            IBulkRegistrationService bulkService,
+            IDatabaseValidationService validationService,
+            IHomeAffairsImportService importService,
+            IValidationProgressService progressService)
         {
-            _userService = new UserService();
-            _dbHelper = new DatabaseHelper();
+            _userService = userService;
+            _dbHelper = dbHelper;
             _kycService = kycService;
             _bulkService = bulkService;
+            _validationService = validationService;
+            _importService = importService;
+            _progressService = progressService;
         }
 
         [HttpGet]
@@ -97,16 +112,117 @@ namespace CrossSetaWeb.Controllers
             }
         }
 
+        [HttpPost]
+        public async Task<IActionResult> UploadHomeAffairs(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                TempData["ErrorMessage"] = "Please select a valid CSV file.";
+                return RedirectToAction("Bulk");
+            }
+
+            try
+            {
+                using (var stream = new StreamReader(file.OpenReadStream()))
+                {
+                    string content = await stream.ReadToEndAsync();
+                    var result = _importService.ImportFromContent(content);
+                    
+                    if (result.Success)
+                    {
+                        TempData["SuccessMessage"] = $"Reference Data Updated Successfully! ({result.RecordsProcessed} records).";
+                        if (result.Errors != null && result.Errors.Count > 0)
+                        {
+                            TempData["ErrorMessage"] = "Some rows failed: " + result.Errors[0];
+                        }
+                    }
+                    else
+                    {
+                        TempData["ErrorMessage"] = "Import Failed: " + (result.Errors?.FirstOrDefault() ?? "Unknown error");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Upload Error: " + ex.Message;
+            }
+
+            return RedirectToAction("Bulk");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ValidateDatabase()
+        {
+            // Start background job
+            string jobId = Guid.NewGuid().ToString();
+            _progressService.StartValidation(jobId);
+
+            // Run in background (Fire and Forget)
+            _ = Task.Run(async () => 
+            {
+                try
+                {
+                    // 1. Refresh Home Affairs Data
+                    string googleSheetUrl = "https://docs.google.com/spreadsheets/d/1eQjxSsuOuXU20xG0gGgmR0Agn7WvudJd/export?format=csv&gid=1067188886";
+                    _progressService.UpdateProgress(jobId, 0, 0, "Updating Reference Data...");
+                    
+                    var importResult = await _importService.ImportFromUrlAsync(googleSheetUrl);
+                    string importMsg = importResult.Success ? $"Source Updated ({importResult.RecordsProcessed} records)." : "Source Update Failed.";
+
+                    // 2. Run Validation
+                    _progressService.UpdateProgress(jobId, 0, 0, "Starting Validation...");
+                    var result = _validationService.ValidateDatabase(jobId);
+
+                    // Generate Report
+                    string reportFileName = $"ValidationReport_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid()}.csv";
+                    string reportsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "reports");
+                    if (!Directory.Exists(reportsDir)) Directory.CreateDirectory(reportsDir);
+                    
+                    string reportPath = Path.Combine(reportsDir, reportFileName);
+
+                    // Write CSV
+                    using (var sw = new StreamWriter(reportPath))
+                    {
+                        await sw.WriteLineAsync("NationalID,FirstName,LastName,Status,Message");
+                        foreach (var d in result.Details)
+                        {
+                            var msg = d.Message?.Replace("\"", "\"\"") ?? "";
+                            await sw.WriteLineAsync($"{d.NationalID},{d.FirstName},{d.LastName},{d.Status},\"{msg}\"");
+                        }
+                    }
+                    
+                    result.ReportFileName = reportFileName;
+                    _progressService.CompleteValidation(jobId, result);
+                }
+                catch (Exception ex)
+                {
+                     // Log error
+                     Console.WriteLine($"Background Job Error: {ex.Message}");
+                     _progressService.UpdateProgress(jobId, 0, 0, $"Error: {ex.Message}");
+                }
+            });
+
+            return Json(new { jobId = jobId });
+        }
+
+        [HttpGet]
+        public IActionResult GetValidationStatus(string jobId)
+        {
+            var progress = _progressService.GetProgress(jobId);
+            if (progress == null) return NotFound();
+            return Json(progress);
+        }
+        
         [HttpGet]
         public IActionResult DownloadReport(string fileName)
         {
-            if (string.IsNullOrEmpty(fileName)) return BadRequest();
+            if (string.IsNullOrEmpty(fileName)) return BadRequest("Filename is missing");
 
             string path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "reports", fileName);
             if (!System.IO.File.Exists(path)) return NotFound();
 
-            byte[] fileBytes = System.IO.File.ReadAllBytes(path);
-            return File(fileBytes, "text/csv", fileName);
+            var bytes = System.IO.File.ReadAllBytes(path);
+            return File(bytes, "text/csv", fileName);
         }
 
         [HttpGet]

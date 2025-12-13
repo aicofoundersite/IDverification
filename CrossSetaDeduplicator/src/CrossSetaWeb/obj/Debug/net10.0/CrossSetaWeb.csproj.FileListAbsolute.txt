@@ -135,3 +135,14 @@
 /Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/obj/Debug/net10.0/CrossSetaWeb.pdb
 /Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/obj/Debug/net10.0/CrossSetaWeb.genruntimeconfig.cache
 /Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/obj/Debug/net10.0/ref/CrossSetaWeb.dll
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/bin/Debug/net10.0/ClientApp/package-lock.json
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/bin/Debug/net10.0/ClientApp/package.json
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/bin/Debug/net10.0/ClientApp/tsconfig.app.json
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/bin/Debug/net10.0/ClientApp/tsconfig.json
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/bin/Debug/net10.0/ClientApp/tsconfig.node.json
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/bin/Debug/net10.0/package-lock.json
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/bin/Debug/net10.0/package.json
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/obj/Debug/net10.0/compressed/64hr8heqxl-{0}-1ptpwk934s-1ptpwk934s.gz
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/obj/Debug/net10.0/compressed/sprw359qwa-{0}-k8u52vx90w-k8u52vx90w.gz
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/obj/Debug/net10.0/compressed/mv7c7hw14z-{0}-yglsouc7d7-yglsouc7d7.gz
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/obj/Debug/net10.0/compressed/2wef3nbouh-{0}-69kjnsiwqx-69kjnsiwqx.gz

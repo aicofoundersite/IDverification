@@ -81,12 +81,22 @@ node src/CrossSetaWeb/scripts/test_traffic_light.js
 *   **Dedicated Portal**: A separate page allowing other SETAs, Companies, and Training Providers to register learners in bulk.
 *   **CSV Upload**: Supports standard CSV format uploads for rapid data entry.
 *   **Batch Processing**: Efficiently processes hundreds of records in a single transaction.
+*   **Interactive UI**: Features real-time progress indicators (loading spinners) and professional branding (SeaGreen) to enhance user experience.
 *   **Error Reporting**: Provides detailed feedback on successful registrations and any row-level errors.
 *   **Code**: [BulkRegistrationService.cs](CrossSetaDeduplicator/src/CrossSetaWeb/Services/BulkRegistrationService.cs)
 
 ---
 
 ## 🌟 Innovation & Bonus Features
+
+### 🛡️ Database Validation & Integrity
+*   **Full Database Scan**: Administrators can trigger a system-wide audit that checks every existing learner against the Home Affairs registry.
+*   **Smart Import Engine**: The system intelligently parses Home Affairs data files, automatically detecting Identity Numbers and Deceased status markers regardless of column order.
+*   **Detailed Reporting**: Generates downloadable CSV reports highlighting:
+    *   **Deceased Learners**: Flags individuals marked as deceased in the Home Affairs database.
+    *   **Invalid IDs**: Detects ID numbers that fail the Luhn algorithm check.
+    *   **Verification Discrepancies**: Identifies learners not found in the official registry.
+*   **Code**: [DatabaseValidationService.cs](CrossSetaDeduplicator/src/CrossSetaWeb/Services/DatabaseValidationService.cs) and [HomeAffairsImportService.cs](CrossSetaDeduplicator/src/CrossSetaWeb/Services/HomeAffairsImportService.cs)
 
 ### 📶 Offline Capability
 *   **Smart Queueing**: If the system detects network failure (or is toggled to "Simulate Offline"), verification requests are serialized and queued locally (`offline_verification_queue.json`).
