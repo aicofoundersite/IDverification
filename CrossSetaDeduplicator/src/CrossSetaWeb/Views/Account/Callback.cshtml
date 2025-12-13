@@ -1,0 +1,57 @@
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+@{
+    ViewData["Title"] = "Processing Login...";
+    var supabaseUrl = Configuration["Supabase:Url"];
+    var supabaseKey = Configuration["Supabase:Key"];
+}
+
+<div class="container mt-5 text-center">
+    <h3>Processing Login...</h3>
+    <div class="spinner-border text-success" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <p id="status-text">Please wait while we verify your credentials.</p>
+</div>
+
+<!-- Hidden form to post success to server -->
+<form id="sessionForm" asp-action="SetSession" method="post" style="display:none;">
+    <input type="hidden" name="email" id="emailInput" />
+</form>
+
+<script src="https://cdn.jsdelivr.net/npm/@@supabase/supabase-js@2"></script>
+<script>
+    const supabaseUrl = '@supabaseUrl';
+    const supabaseKey = '@supabaseKey';
+    const { createClient } = supabase;
+    const _supabase = createClient(supabaseUrl, supabaseKey);
+
+    async function handleCallback() {
+        // Check for session
+        const { data, error } = await _supabase.auth.getSession();
+
+        if (error) {
+            document.getElementById('status-text').innerText = 'Error: ' + error.message;
+            return;
+        }
+
+        if (data.session) {
+            submitSession(data.session);
+        } else {
+            // Wait for auth state change (e.g. processing hash)
+            _supabase.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_IN' && session) {
+                    submitSession(session);
+                }
+            });
+        }
+    }
+
+    function submitSession(session) {
+        document.getElementById('status-text').innerText = 'Login successful! Redirecting...';
+        document.getElementById('emailInput').value = session.user.email;
+        document.getElementById('sessionForm').submit();
+    }
+
+    handleCallback();
+</script>

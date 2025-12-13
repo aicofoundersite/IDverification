@@ -131,6 +131,83 @@ namespace CrossSetaWeb.DataAccess
             }
         }
 
+        public void InitializeUserSchema()
+        {
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                // 1. Create Users Table
+                string sqlTable = @"
+                    IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Users' AND xtype='U')
+                    BEGIN
+                        CREATE TABLE Users (
+                            UserID INT IDENTITY(1,1) PRIMARY KEY,
+                            IDType NVARCHAR(50),
+                            NationalID NVARCHAR(50),
+                            Title NVARCHAR(20),
+                            FirstName NVARCHAR(100),
+                            LastName NVARCHAR(100),
+                            Email NVARCHAR(100),
+                            Province NVARCHAR(50),
+                            UserName NVARCHAR(100) UNIQUE,
+                            PasswordHash NVARCHAR(MAX),
+                            SecurityQuestion NVARCHAR(200),
+                            SecurityAnswer NVARCHAR(MAX),
+                            RegistrationDate DATETIME DEFAULT GETDATE(),
+                            IsActive BIT DEFAULT 1
+                        );
+                    END";
+                
+                using (SqlCommand cmd = new SqlCommand(sqlTable, conn))
+                {
+                    cmd.ExecuteNonQuery();
+                }
+
+                // 2. Create sp_InsertUser
+                string sqlProcDrop = "IF EXISTS (SELECT * FROM sysobjects WHERE name='sp_InsertUser' AND xtype='P') DROP PROCEDURE sp_InsertUser";
+                using (SqlCommand cmd = new SqlCommand(sqlProcDrop, conn))
+                {
+                    cmd.ExecuteNonQuery();
+                }
+
+                string sqlProcCreate = @"
+                    CREATE PROCEDURE sp_InsertUser
+                        @IDType NVARCHAR(50),
+                        @NationalID NVARCHAR(50),
+                        @Title NVARCHAR(20),
+                        @FirstName NVARCHAR(100),
+                        @LastName NVARCHAR(100),
+                        @Email NVARCHAR(100),
+                        @Province NVARCHAR(50),
+                        @UserName NVARCHAR(100),
+                        @PasswordHash NVARCHAR(MAX),
+                        @SecurityQuestion NVARCHAR(200),
+                        @SecurityAnswer NVARCHAR(MAX)
+                    AS
+                    BEGIN
+                        SET NOCOUNT ON;
+
+                        IF EXISTS (SELECT 1 FROM Users WHERE UserName = @UserName)
+                        BEGIN
+                            THROW 51000, 'Username already exists.', 1;
+                        END
+
+                        INSERT INTO Users (
+                            IDType, NationalID, Title, FirstName, LastName, Email, Province, UserName, PasswordHash, SecurityQuestion, SecurityAnswer
+                        )
+                        VALUES (
+                            @IDType, @NationalID, @Title, @FirstName, @LastName, @Email, @Province, @UserName, @PasswordHash, @SecurityQuestion, @SecurityAnswer
+                        );
+                    END";
+
+                using (SqlCommand cmd = new SqlCommand(sqlProcCreate, conn))
+                {
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
         public void BatchImportHomeAffairsData(List<HomeAffairsCitizen> citizens)
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))
@@ -462,6 +539,94 @@ namespace CrossSetaWeb.DataAccess
                 }
             }
             return results;
+        }
+
+        public void InitializeUserActivitySchema()
+        {
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                string sql = @"
+                    IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='UserActivityLogs' AND xtype='U')
+                    BEGIN
+                        CREATE TABLE UserActivityLogs (
+                            LogID INT IDENTITY(1,1) PRIMARY KEY,
+                            UserName NVARCHAR(100),
+                            ActivityType NVARCHAR(50),
+                            ActivityDate DATETIME DEFAULT GETDATE(),
+                            IPAddress NVARCHAR(50),
+                            Details NVARCHAR(MAX)
+                        );
+                        CREATE INDEX IX_UserActivityLogs_UserName ON UserActivityLogs(UserName);
+                        CREATE INDEX IX_UserActivityLogs_Date ON UserActivityLogs(ActivityDate);
+                    END";
+                using (SqlCommand cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public void LogUserActivity(string email, string activityType, string ipAddress, string details)
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(_connectionString))
+                {
+                    string sql = "INSERT INTO UserActivityLogs (UserName, ActivityType, IPAddress, Details) VALUES (@UserName, @ActivityType, @IPAddress, @Details)";
+                    using (SqlCommand cmd = new SqlCommand(sql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@UserName", email ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@ActivityType", activityType ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@IPAddress", ipAddress ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@Details", details ?? (object)DBNull.Value);
+
+                        conn.Open();
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // Silently fail logging to not disrupt user flow
+            }
+        }
+
+        public List<UserActivityLog> GetUserActivityLogs()
+        {
+            var logs = new List<UserActivityLog>();
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                // Get latest 100 logs
+                string sql = "SELECT TOP 100 * FROM UserActivityLogs ORDER BY ActivityDate DESC";
+                using (SqlCommand cmd = new SqlCommand(sql, conn))
+                {
+                    try
+                    {
+                        conn.Open();
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                logs.Add(new UserActivityLog
+                                {
+                                    LogID = Convert.ToInt32(reader["LogID"]),
+                                    UserName = reader["UserName"] == DBNull.Value ? "" : reader["UserName"].ToString(),
+                                    ActivityType = reader["ActivityType"] == DBNull.Value ? "" : reader["ActivityType"].ToString(),
+                                    ActivityDate = Convert.ToDateTime(reader["ActivityDate"]),
+                                    IPAddress = reader["IPAddress"] == DBNull.Value ? "" : reader["IPAddress"].ToString(),
+                                    Details = reader["Details"] == DBNull.Value ? "" : reader["Details"].ToString()
+                                });
+                            }
+                        }
+                    }
+                    catch (SqlException)
+                    {
+                        // Table might not exist yet
+                    }
+                }
+            }
+            return logs;
         }
 
         private LearnerModel MapReaderToLearner(SqlDataReader reader)

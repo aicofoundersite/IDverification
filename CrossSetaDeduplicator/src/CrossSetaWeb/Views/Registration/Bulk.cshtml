@@ -1,5 +1,5 @@
 @{
-    ViewData["Title"] = "Bulk Validation";
+    ViewData["Title"] = "Identity Verification";
 }
 
 <style>
@@ -18,7 +18,7 @@
 </style>
 
 <div class="container">
-    <h2 style="color: SeaGreen; font-weight: bold;">Bulk Validation</h2>
+    <h2 style="color: SeaGreen; font-weight: bold;">Identity Verification</h2>
     <p class="text-muted">Validate your learner database against Home Affairs records or upload new bulk files for registration and validation.</p>
 
     @if (TempData["ValidationSuccess"] != null)
@@ -59,6 +59,31 @@
         </div>
     }
 
+    <!-- Quick Verification Section -->
+    <div class="section-header">Quick Verification Check</div>
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Single ID Verification</h5>
+            <p class="text-muted">Instantly verify a single ID number against Home Affairs records.</p>
+            
+            <div class="row">
+                <div class="col-md-5">
+                    <input type="text" id="quickSearchId" class="form-control" placeholder="Enter South African ID Number" />
+                </div>
+                <div class="col-md-5">
+                    <input type="text" id="quickSurname" class="form-control" placeholder="Enter Surname (Optional)" />
+                </div>
+                <div class="col-md-2">
+                    <button type="button" onclick="performQuickCheck()" class="btn btn-primary w-100" style="background-color: SeaGreen; border-color: SeaGreen;">Verify ID</button>
+                </div>
+            </div>
+
+            <div id="quickResultSection" class="mt-3" style="display:none;">
+                <!-- Results will be injected here -->
+            </div>
+        </div>
+    </div>
+
     <!-- Database Validation Section (Moved to Top) -->
     <div class="section-header">Database Validation</div>
     
@@ -85,6 +110,9 @@
                         <strong>Validation Complete!</strong> <br/>
                         <span id="resultMessage"></span>
                         <br/>
+                        <div style="max-width: 500px; margin: 20px auto;">
+                            <canvas id="validationChart"></canvas>
+                        </div>
                         <a id="downloadLink" href="#" class="btn btn-info btn-sm mt-2"><i class="bi bi-download"></i> Download Report</a>
                     </div>
 
@@ -93,7 +121,95 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        let myChart = null;
+
+        function performQuickCheck() {
+            const id = document.getElementById('quickSearchId').value;
+            const surname = document.getElementById('quickSurname').value;
+            const resultDiv = document.getElementById('quickResultSection');
+            
+            if (!id) {
+                alert("Please enter an ID Number.");
+                return;
+            }
+
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="alert alert-info">Checking...</div>';
+
+            const url = surname 
+                ? `/api/verification/home-affairs/${id}?surname=${encodeURIComponent(surname)}`
+                : `/api/verification/home-affairs/${id}`;
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error("Verification failed or Unauthorized");
+                    return response.json();
+                })
+                .then(data => {
+                    renderQuickResult(data);
+                })
+                .catch(err => {
+                    resultDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
+                });
+        }
+
+        function renderQuickResult(result) {
+            const resultDiv = document.getElementById('quickResultSection');
+            
+            if (result.verificationResult === 'INVALID_FORMAT') {
+                resultDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h4><i class="bi bi-exclamation-circle"></i> Invalid Format</h4>
+                        <p>The ID number provided is not in a valid format.</p>
+                    </div>`;
+                return;
+            }
+
+            if (!result.found) {
+                resultDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h4><i class="bi bi-x-circle"></i> Identity Not Found</h4>
+                        <p>No record found for this ID in the Home Affairs database.</p>
+                    </div>`;
+                return;
+            }
+
+            let alertClass = 'alert-success';
+            let icon = 'bi-check-circle';
+            let title = 'Identity Verified';
+
+            if (result.verificationResult === 'MISMATCH') {
+                alertClass = 'alert-warning';
+                icon = 'bi-exclamation-triangle';
+                title = 'Identity Mismatch';
+            } else if (result.verificationResult === 'DECEASED') {
+                alertClass = 'alert-danger';
+                icon = 'bi-exclamation-octagon';
+                title = 'Identity Deceased';
+            }
+
+            const isDeceased = result.data.isDeceased;
+            const statusColor = isDeceased ? 'text-danger font-weight-bold' : 'text-success font-weight-bold';
+
+            resultDiv.innerHTML = `
+                <div class="alert ${alertClass}">
+                    <h4><i class="bi ${icon}"></i> ${title}</h4>
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Full Name:</strong> ${result.data.firstName} ${result.data.surname}<br>
+                            <strong>ID Number:</strong> ${result.data.nationalID}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Status:</strong> <span class="${statusColor}">${isDeceased ? 'DECEASED' : 'ALIVE'}</span><br>
+                            <strong>Source:</strong> ${result.data.verificationSource || 'Home Affairs'}
+                        </div>
+                    </div>
+                </div>`;
+        }
+
         function startValidation() {
             document.getElementById('startBtn').disabled = true;
             document.getElementById('progressSection').style.display = 'block';
@@ -116,10 +232,24 @@
         }
 
         function pollProgress(jobId) {
+            let errorCount = 0;
             const interval = setInterval(() => {
                 fetch('@Url.Action("GetValidationStatus")?jobId=' + jobId)
-                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.ok) {
+                            if (response.status === 404) {
+                                throw new Error("Job not found (404)");
+                            }
+                            if (response.status === 401 || response.status === 403) {
+                                window.location.reload(); // Redirect to login
+                                throw new Error("Unauthorized");
+                            }
+                            throw new Error("Server Error: " + response.status);
+                        }
+                        return response.json();
+                    })
                     .then(data => {
+                        errorCount = 0; // Reset error count on success
                         const pct = data.percentage + '%';
                         document.getElementById('progressBar').style.width = pct;
                         document.getElementById('progressBar').innerText = pct;
@@ -134,6 +264,12 @@
                     })
                     .catch(err => {
                         console.error("Polling error", err);
+                        errorCount++;
+                        if (errorCount > 10) {
+                            clearInterval(interval);
+                            alert("Lost connection to server. Please try again.");
+                            document.getElementById('startBtn').disabled = false;
+                        }
                     });
             }, 1000);
         }
@@ -145,6 +281,58 @@
             document.getElementById('resultMessage').innerText = 
                 `Processed ${result.totalRecords} Learners. Stats: Valid: ${result.validCount} | Deceased: ${result.deceasedCount} | Mismatch: ${result.surnameMismatchCount} | Not Found: ${result.notFoundCount}`;
             
+            // Render Chart
+            const ctx = document.getElementById('validationChart').getContext('2d');
+            
+            if (myChart) {
+                myChart.destroy();
+            }
+
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Valid', 'Deceased', 'Mismatch', 'Not Found', 'Invalid Format'],
+                    datasets: [{
+                        label: 'Validation Statistics',
+                        data: [
+                            result.validCount, 
+                            result.deceasedCount, 
+                            result.surnameMismatchCount, 
+                            result.notFoundCount, 
+                            result.invalidFormatCount || 0
+                        ],
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.7)',  // Valid (Green)
+                            'rgba(255, 99, 132, 0.7)',  // Deceased (Red)
+                            'rgba(255, 206, 86, 0.7)',  // Mismatch (Yellow)
+                            'rgba(54, 162, 235, 0.7)',  // Not Found (Blue)
+                            'rgba(153, 102, 255, 0.7)'  // Invalid (Purple)
+                        ],
+                        borderColor: [
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(153, 102, 255, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Identity Verification Results'
+                        }
+                    }
+                }
+            });
+
             if (result.reportFileName) {
                 const link = document.getElementById('downloadLink');
                 link.href = '@Url.Action("DownloadReport")?fileName=' + result.reportFileName;
@@ -159,7 +347,7 @@
 
     <form asp-action="Bulk" method="post" enctype="multipart/form-data" id="bulkUploadForm">
         
-        <div class="section-header">Bulk Upload & Registration</div>
+        <div class="section-header">Bulk Identity Verification</div>
         
         <div class="row">
             <div class="col-md-12 mb-3">
@@ -170,7 +358,7 @@
         </div>
 
         <div class="section-header">CSV Format Guidelines</div>
-        <div class="alert alert-info">
+        <div class="alert alert-success" style="background-color: rgba(46, 139, 87, 0.1); border-color: SeaGreen; color: #1b5e20;">
             <p>Please ensure your CSV follows the exact format of the WRSETA Template (in order):</p>
             <ul>
                 <li><strong>First Name / s</strong> (Required)</li>
@@ -190,6 +378,42 @@
             <a href="@Url.Action("Learner", "Registration")" class="btn btn-secondary" style="background-color: SeaGreen; border-color: SeaGreen; color: white;">Cancel</a>
         </div>
     </form>
+
+    @if (ViewBag.IsSuperUser == true && ViewBag.UserActivityLogs != null)
+    {
+        <div class="section-header">User Activity Logs (Super User Access)</div>
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>User</th>
+                                <th>Activity</th>
+                                <th>IP Address</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var log in (List<CrossSetaWeb.Models.UserActivityLog>)ViewBag.UserActivityLogs)
+                            {
+                                <tr>
+                                    <td>@log.ActivityDate.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                    <td>@log.UserName</td>
+                                    <td>
+                                        <span class="badge @(log.ActivityType == "Login" ? "bg-success" : "bg-secondary")">@log.ActivityType</span>
+                                    </td>
+                                    <td>@log.IPAddress</td>
+                                    <td>@log.Details</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
 </div>
 
 <!-- Loading Overlay -->

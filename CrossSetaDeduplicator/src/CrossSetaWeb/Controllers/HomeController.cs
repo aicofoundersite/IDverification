@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using CrossSetaWeb.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CrossSetaWeb.Controllers;
 

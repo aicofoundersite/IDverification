@@ -291,15 +291,28 @@ namespace CrossSetaWeb.Services
         public static bool IsValidLuhn(string id)
         {
             if (string.IsNullOrEmpty(id)) return false;
-            id = id.Trim();
-            if (id.Length != 13 || !long.TryParse(id, out _)) return false;
+            // Avoid allocation if possible, but Trim() allocates.
+            // ID length check first to fail fast.
+            if (id.Length < 13) return false; 
+            
+            // We can operate on the string directly if we assume it's clean, 
+            // but Trim() is safer for user input.
+            var trimmed = id.Trim();
+            if (trimmed.Length != 13) return false;
 
+            // Manual digit check to avoid long.TryParse overhead if not needed, 
+            // but long.TryParse is good for verifying all digits.
+            // However, looping and checking IsDigit is faster than TryParse + loop.
+            // Let's stick to the loop logic which implicitly checks digits via subtraction.
+            
             int sum = 0;
             bool alternate = false;
-            for (int i = id.Length - 1; i >= 0; i--)
+            for (int i = trimmed.Length - 1; i >= 0; i--)
             {
-                char c = id[i];
-                int n = int.Parse(c.ToString());
+                char c = trimmed[i];
+                if (c < '0' || c > '9') return false; // Non-digit check
+                
+                int n = c - '0'; // Optimized: No ToString/Parse
                 if (alternate)
                 {
                     n *= 2;

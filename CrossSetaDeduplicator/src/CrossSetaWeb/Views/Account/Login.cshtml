@@ -1,0 +1,92 @@
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+@model CrossSetaWeb.Models.LoginViewModel
+@{
+    ViewData["Title"] = "Login";
+    var supabaseUrl = Configuration["Supabase:Url"];
+    var supabaseKey = Configuration["Supabase:Key"];
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h3 class="card-title mb-0">Login</h3>
+                </div>
+                <div class="card-body">
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger">
+                            @Html.ValidationSummary(false)
+                        </div>
+                    }
+
+                    <form asp-action="Login" method="post">
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label">Email Address</label>
+                            <input asp-for="Email" class="form-control" type="email" required />
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="Password" class="form-label">Password</label>
+                            <input asp-for="Password" class="form-control" type="password" required />
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success">Login</button>
+                        </div>
+                    </form>
+
+                    <div class="text-center my-3">
+                        <span class="text-muted">OR</span>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button onclick="signInWithGoogle()" class="btn btn-outline-dark">
+                            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width: 20px; margin-right: 10px;">
+                            Sign in with Google
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@@supabase/supabase-js@2"></script>
+<script>
+    // Initialize Supabase Client
+    const supabaseUrl = '@supabaseUrl';
+    const supabaseKey = '@supabaseKey';
+    
+    // Check if keys are set
+    if (!supabaseUrl || supabaseUrl.includes("your-project-url")) {
+        console.warn("Supabase URL is not configured.");
+    }
+
+    const { createClient } = supabase;
+    const _supabase = createClient(supabaseUrl, supabaseKey);
+
+    async function signInWithGoogle() {
+        try {
+            const { data, error } = await _supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin + '/Account/Callback'
+                }
+            });
+            
+            if (error) {
+                if (error.message && error.message.includes("provider is not enabled")) {
+                    alert('Google Login is not enabled in the Supabase Dashboard. Please contact the administrator.');
+                } else {
+                    alert('Error logging in with Google: ' + error.message);
+                }
+                console.error(error);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Unexpected error during login.');
+        }
+    }
+</script>

@@ -4,6 +4,7 @@ using Microsoft.Data.SqlClient;
 using CrossSetaWeb.Models;
 using CrossSetaWeb.Services;
 using CrossSetaWeb.DataAccess;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CrossSetaWeb.Controllers
 {
@@ -38,12 +39,19 @@ namespace CrossSetaWeb.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         public IActionResult Bulk()
         {
+            if (HttpContext.User.Identity.IsAuthenticated && HttpContext.User.Identity.Name.Equals("koosms02@gmail.com", StringComparison.OrdinalIgnoreCase))
+            {
+                ViewBag.IsSuperUser = true;
+                ViewBag.UserActivityLogs = _dbHelper.GetUserActivityLogs();
+            }
             return View();
         }
 
         [HttpPost]
+        [Authorize]
         public IActionResult Bulk(IFormFile csvFile)
         {
             if (csvFile == null || csvFile.Length == 0)
@@ -113,6 +121,7 @@ namespace CrossSetaWeb.Controllers
         }
 
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> UploadHomeAffairs(IFormFile file)
         {
             if (file == null || file.Length == 0)
@@ -151,6 +160,7 @@ namespace CrossSetaWeb.Controllers
         }
 
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> ValidateDatabase()
         {
             // Start background job
@@ -162,12 +172,12 @@ namespace CrossSetaWeb.Controllers
             {
                 try
                 {
-                    // 1. Refresh Home Affairs Data
-                    string googleSheetUrl = "https://docs.google.com/spreadsheets/d/1eQjxSsuOuXU20xG0gGgmR0Agn7WvudJd/export?format=csv&gid=1067188886";
-                    _progressService.UpdateProgress(jobId, 0, 0, "Updating Reference Data...");
+                    // 1. Refresh Home Affairs Data (Skipped for speed - User Request)
+                    // string googleSheetUrl = "https://docs.google.com/spreadsheets/d/1eQjxSsuOuXU20xG0gGgmR0Agn7WvudJd/export?format=csv&gid=1067188886";
+                    // _progressService.UpdateProgress(jobId, 0, 0, "Updating Reference Data...");
                     
-                    var importResult = await _importService.ImportFromUrlAsync(googleSheetUrl);
-                    string importMsg = importResult.Success ? $"Source Updated ({importResult.RecordsProcessed} records)." : "Source Update Failed.";
+                    // var importResult = await _importService.ImportFromUrlAsync(googleSheetUrl);
+                    // string importMsg = importResult.Success ? $"Source Updated ({importResult.RecordsProcessed} records)." : "Source Update Failed.";
 
                     // 2. Run Validation
                     _progressService.UpdateProgress(jobId, 0, 0, "Starting Validation...");
@@ -206,6 +216,7 @@ namespace CrossSetaWeb.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         public IActionResult GetValidationStatus(string jobId)
         {
             var progress = _progressService.GetProgress(jobId);
@@ -214,6 +225,7 @@ namespace CrossSetaWeb.Controllers
         }
         
         [HttpGet]
+        [Authorize]
         public IActionResult DownloadReport(string fileName)
         {
             if (string.IsNullOrEmpty(fileName)) return BadRequest("Filename is missing");

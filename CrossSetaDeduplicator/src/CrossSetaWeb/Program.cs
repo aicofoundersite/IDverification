@@ -1,7 +1,24 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Account/Login";
+        options.LogoutPath = "/Account/Logout";
+        options.ExpireTimeSpan = TimeSpan.FromHours(8); // Keep user logged in for 8 hours
+    });
+
+builder.Services.AddScoped<Supabase.Client>(provider => {
+    var config = provider.GetRequiredService<IConfiguration>();
+    var url = config["Supabase:Url"];
+    var key = config["Supabase:Key"];
+    return new Supabase.Client(url, key);
+});
+
 builder.Services.AddScoped<CrossSetaWeb.DataAccess.IDatabaseHelper, CrossSetaWeb.DataAccess.DatabaseHelper>();
 builder.Services.AddScoped<CrossSetaWeb.Services.IUserService, CrossSetaWeb.Services.UserService>();
 builder.Services.AddScoped<CrossSetaWeb.Services.IKYCService, CrossSetaWeb.Services.KYCService>();
@@ -23,6 +40,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();
@@ -41,6 +59,10 @@ using (var scope = app.Services.CreateScope())
     
     try 
     {
+        // Ensure Users table and SP exist
+        dbHelper.InitializeUserSchema();
+        dbHelper.InitializeUserActivitySchema();
+
         // Simple check to avoid re-seeding if data is present
         // We catch exception in case DB is not ready or other issues
         var existingLearners = dbHelper.GetAllLearners();

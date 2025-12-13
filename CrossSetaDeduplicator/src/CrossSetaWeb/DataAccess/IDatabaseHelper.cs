@@ -7,6 +7,10 @@ namespace CrossSetaWeb.DataAccess
     {
         void InsertLearner(LearnerModel learner);
         void InitializeHomeAffairsTable();
+        void InitializeUserSchema();
+        void InitializeUserActivitySchema();
+        void LogUserActivity(string email, string activityType, string ipAddress, string details);
+        List<UserActivityLog> GetUserActivityLogs();
         void BatchImportHomeAffairsData(List<HomeAffairsCitizen> citizens);
         List<DatabaseHelper.BulkInsertError> BatchInsertLearners(List<LearnerModel> learners);
         void InsertUser(UserModel user);
