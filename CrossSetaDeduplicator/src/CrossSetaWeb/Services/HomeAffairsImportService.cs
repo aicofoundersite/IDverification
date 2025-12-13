@@ -64,6 +64,18 @@ namespace CrossSetaWeb.Services
                 // 3. Batch Insert with Transaction
                 if (validRecords.Count > 0)
                 {
+                    // INJECT TEST RECORD FOR TRAFFIC LIGHT (DECEASED)
+                    // Requested by User: ID 0001010000001
+                    validRecords.Add(new HomeAffairsCitizen
+                    {
+                        NationalID = "0001010000001",
+                        FirstName = "Any",
+                        Surname = "Any",
+                        DateOfBirth = new DateTime(2000, 1, 1),
+                        IsDeceased = true,
+                        VerificationSource = "System_Manual_Inject"
+                    });
+
                     _dbHelper.InitializeHomeAffairsTable(); // Ensure table exists
                     _dbHelper.BatchImportHomeAffairsData(validRecords);
                 }

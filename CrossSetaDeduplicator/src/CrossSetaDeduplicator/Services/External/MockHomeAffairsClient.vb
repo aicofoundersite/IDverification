@@ -47,6 +47,15 @@ Namespace CrossSetaDeduplicator.Services.External
                 Return response
             End If
 
+            ' New Test Case requested by User
+            If idNumber = "0001010000001" Then
+                response.Status = "Deceased"
+                response.FirstName = "Any"
+                response.Surname = "Any"
+                response.Message = "Person is marked as DECEASED."
+                Return response
+            End If
+
             ' 2. Lookup in Google Sheet Data
             If _cachedData IsNot Nothing AndAlso _cachedData.ContainsKey(idNumber) Then
                 Dim record = _cachedData(idNumber)

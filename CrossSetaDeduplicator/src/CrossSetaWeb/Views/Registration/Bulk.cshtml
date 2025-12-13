@@ -1,0 +1,63 @@
+@{
+    ViewData["Title"] = "Bulk Learner Registration";
+}
+
+<style>
+    .section-header {
+        background-color: SeaGreen;
+        color: white;
+        padding: 10px;
+        font-weight: bold;
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+    .form-label {
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+</style>
+
+<div class="container">
+    <h2 style="color: SeaGreen; font-weight: bold;">Bulk Learner Registration</h2>
+    <p class="text-muted">Use this page to upload CSV files for bulk learner registration. This is intended for SETAs, Companies, and Training Providers.</p>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger">
+            <strong>Import Failed:</strong>
+            @Html.ValidationSummary(false)
+        </div>
+    }
+
+    <form asp-action="Bulk" method="post" enctype="multipart/form-data">
+        
+        <div class="section-header">Upload CSV File</div>
+        
+        <div class="row">
+            <div class="col-md-12 mb-3">
+                <label class="form-label">Select CSV File*</label>
+                <input type="file" name="csvFile" class="form-control" accept=".csv" required />
+                <small class="text-muted">File must be a valid CSV containing learner details.</small>
+            </div>
+        </div>
+
+        <div class="section-header">CSV Format Guidelines</div>
+        <div class="alert alert-info">
+            <p>Please ensure your CSV follows this format:</p>
+            <ul>
+                <li><strong>FirstName</strong>, <strong>LastName</strong>, <strong>NationalID</strong>, <strong>DateOfBirth</strong> (YYYY-MM-DD), <strong>Gender</strong>, <strong>MobileNumber</strong></li>
+            </ul>
+            <p><em>Note: ID numbers will be validated using the Luhn algorithm. Duplicates will be skipped.</em></p>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary" style="background-color: SeaGreen; border-color: SeaGreen;">Upload and Process</button>
+            <a href="@Url.Action("Learner", "Registration")" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>

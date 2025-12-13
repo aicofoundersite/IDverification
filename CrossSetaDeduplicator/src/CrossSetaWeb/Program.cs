@@ -2,7 +2,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<CrossSetaWeb.DataAccess.DatabaseHelper>();
 builder.Services.AddScoped<CrossSetaWeb.Services.KYCService>();
+builder.Services.AddScoped<CrossSetaWeb.Services.BulkRegistrationService>();
 
 var app = builder.Build();
 

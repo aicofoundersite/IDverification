@@ -2,6 +2,8 @@ Imports System.IO
 Imports System.Text.Json
 Imports System.Text.Json.Nodes
 Imports System.Threading.Tasks
+Imports System.Security.Cryptography
+Imports System.Text
 Imports CrossSetaDeduplicator.DataAccess
 Imports CrossSetaDeduplicator.Services.External
 
@@ -17,13 +19,49 @@ Namespace CrossSetaDeduplicator.Services
         Private _dbHelper As DatabaseHelper
         Private _offlineQueuePath As String = "offline_verification_queue.json"
         Private _client As New MockHomeAffairsClient()
-        
+        Private ReadOnly _encryptionKey As String = "CrossSetaHackathonKey2025!@#" ' Secure key for encryption
+
         ' Toggle this to demonstrate offline capabilities
         Public Property SimulateOffline As Boolean = False
 
         Public Sub New()
             _dbHelper = New DatabaseHelper(Nothing)
         End Sub
+
+        Private Function Encrypt(plainText As String) As String
+            Using aesAlg As Aes = Aes.Create()
+                Dim keyBytes As Byte() = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(_encryptionKey))
+                aesAlg.Key = keyBytes
+                aesAlg.IV = New Byte(15) {} ' Using zero IV for consistent line-by-line processing in this demo
+
+                Dim encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV)
+                Using msEncrypt As New MemoryStream()
+                    Using csEncrypt As New CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write)
+                        Using swEncrypt As New StreamWriter(csEncrypt)
+                            swEncrypt.Write(plainText)
+                        End Using
+                    End Using
+                    Return Convert.ToBase64String(msEncrypt.ToArray())
+                End Using
+            End Using
+        End Function
+
+        Private Function Decrypt(cipherText As String) As String
+            Using aesAlg As Aes = Aes.Create()
+                Dim keyBytes As Byte() = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(_encryptionKey))
+                aesAlg.Key = keyBytes
+                aesAlg.IV = New Byte(15) {}
+
+                Dim decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV)
+                Using msDecrypt As New MemoryStream(Convert.FromBase64String(cipherText))
+                    Using csDecrypt As New CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read)
+                        Using srDecrypt As New StreamReader(csDecrypt)
+                            Return srDecrypt.ReadToEnd()
+                        End Using
+                    End Using
+                End Using
+            End Using
+        End Function
 
         ''' <summary>
         ''' Validates the South African ID number format using the Luhn algorithm.
@@ -137,8 +175,9 @@ Namespace CrossSetaDeduplicator.Services
                 .Timestamp = DateTime.Now
             }
             
-            Dim json As String = JsonSerializer.Serialize(queueItem) & Environment.NewLine
-            File.AppendAllText(_offlineQueuePath, json)
+            Dim json As String = JsonSerializer.Serialize(queueItem)
+            Dim encryptedJson As String = Encrypt(json) & Environment.NewLine
+            File.AppendAllText(_offlineQueuePath, encryptedJson)
         End Sub
 
         Public Function GetOfflineQueueSize() As Integer
@@ -156,10 +195,9 @@ Namespace CrossSetaDeduplicator.Services
                 If String.IsNullOrWhiteSpace(line) Then Continue For
                 
                 Try
-                    ' Deserialize
-                    ' We used an anonymous type to serialize, so we need to parse carefully or use a helper class.
-                    ' Using JsonNode for flexibility.
-                    Dim node = JsonNode.Parse(line)
+                    ' Decrypt and Deserialize
+                    Dim json As String = Decrypt(line)
+                    Dim node = JsonNode.Parse(json)
                     Dim id = node("NationalID").ToString()
                     Dim fn = node("FirstName").ToString()
                     Dim sn = node("Surname").ToString()

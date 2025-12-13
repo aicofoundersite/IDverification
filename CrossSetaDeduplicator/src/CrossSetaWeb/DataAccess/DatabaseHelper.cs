@@ -179,6 +179,98 @@ namespace CrossSetaWeb.DataAccess
             }
         }
 
+        public void BatchInsertLearners(List<LearnerModel> learners)
+        {
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (SqlTransaction transaction = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        foreach (var learner in learners)
+                        {
+                            // We use the existing stored procedure for consistency
+                            SqlCommand cmd = new SqlCommand("sp_InsertLearner", conn, transaction);
+                            cmd.CommandType = CommandType.StoredProcedure;
+
+                            // Basic Fields
+                            cmd.Parameters.AddWithValue("@NationalID", GetValue(learner.NationalID));
+                            cmd.Parameters.AddWithValue("@FirstName", GetValue(learner.FirstName));
+                            cmd.Parameters.AddWithValue("@LastName", GetValue(learner.LastName));
+                            cmd.Parameters.AddWithValue("@DateOfBirth", learner.DateOfBirth);
+                            cmd.Parameters.AddWithValue("@Gender", GetValue(learner.Gender));
+                            cmd.Parameters.AddWithValue("@Role", string.IsNullOrEmpty(learner.Role) ? "Learner" : learner.Role);
+                            cmd.Parameters.AddWithValue("@BiometricHash", GetValue(learner.BiometricHash));
+                            cmd.Parameters.AddWithValue("@IsVerified", learner.IsVerified);
+                            cmd.Parameters.AddWithValue("@SetaName", string.IsNullOrEmpty(learner.SetaName) ? "BulkImport" : learner.SetaName);
+
+                            // New Personal Info Fields
+                            cmd.Parameters.AddWithValue("@Nationality", GetValue(learner.Nationality));
+                            cmd.Parameters.AddWithValue("@Title", GetValue(learner.Title));
+                            cmd.Parameters.AddWithValue("@MiddleName", GetValue(learner.MiddleName));
+                            cmd.Parameters.AddWithValue("@Age", learner.Age == 0 ? DBNull.Value : (object)learner.Age);
+                            cmd.Parameters.AddWithValue("@EquityCode", GetValue(learner.EquityCode));
+                            cmd.Parameters.AddWithValue("@HomeLanguage", GetValue(learner.HomeLanguage));
+                            cmd.Parameters.AddWithValue("@PreviousLastName", GetValue(learner.PreviousLastName));
+                            cmd.Parameters.AddWithValue("@Municipality", GetValue(learner.Municipality));
+                            cmd.Parameters.AddWithValue("@DisabilityStatus", GetValue(learner.DisabilityStatus));
+                            cmd.Parameters.AddWithValue("@CitizenStatus", GetValue(learner.CitizenStatus));
+                            cmd.Parameters.AddWithValue("@StatsAreaCode", GetValue(learner.StatsAreaCode));
+                            cmd.Parameters.AddWithValue("@SocioEconomicStatus", GetValue(learner.SocioEconomicStatus));
+                            cmd.Parameters.AddWithValue("@PopiActConsent", learner.PopiActConsent);
+                            cmd.Parameters.AddWithValue("@PopiActDate", learner.PopiActDate == DateTime.MinValue ? DBNull.Value : (object)learner.PopiActDate);
+                            cmd.Parameters.AddWithValue("@IsResidentialAddressSameAsPostal", learner.IsResidentialAddressSameAsPostal);
+
+                            // Contact Details - simplified for bulk if needed, or mapped if CSV supports
+                            cmd.Parameters.AddWithValue("@PhoneNumber", GetValue(learner.PhoneNumber));
+                            cmd.Parameters.AddWithValue("@EmailAddress", GetValue(learner.EmailAddress));
+                            
+                            // Fill optional fields with nulls to avoid SP errors if not in CSV
+                            cmd.Parameters.AddWithValue("@POBox", DBNull.Value);
+                            cmd.Parameters.AddWithValue("@CellphoneNumber", DBNull.Value);
+                            cmd.Parameters.AddWithValue("@StreetName", DBNull.Value);
+                            cmd.Parameters.AddWithValue("@PostalSuburb", DBNull.Value);
+                            cmd.Parameters.AddWithValue("@StreetHouseNo", DBNull.Value);
+                            cmd.Parameters.AddWithValue("@PhysicalSuburb", DBNull.Value);
+                            cmd.Parameters.AddWithValue("@City", DBNull.Value);
+                            cmd.Parameters.AddWithValue("@FaxNumber", DBNull.Value);
+                            cmd.Parameters.AddWithValue("@PostalCode", DBNull.Value);
+                            cmd.Parameters.AddWithValue("@Province", DBNull.Value);
+                            cmd.Parameters.AddWithValue("@UrbanRural", DBNull.Value);
+                            
+                            cmd.Parameters.AddWithValue("@Disability_Communication", DBNull.Value);
+                            cmd.Parameters.AddWithValue("@Disability_Hearing", DBNull.Value);
+                            cmd.Parameters.AddWithValue("@Disability_Remembering", DBNull.Value);
+                            cmd.Parameters.AddWithValue("@Disability_Seeing", DBNull.Value);
+                            cmd.Parameters.AddWithValue("@Disability_SelfCare", DBNull.Value);
+                            cmd.Parameters.AddWithValue("@Disability_Walking", DBNull.Value);
+
+                            cmd.Parameters.AddWithValue("@LastSchoolAttended", DBNull.Value);
+                            cmd.Parameters.AddWithValue("@LastSchoolYear", DBNull.Value);
+
+                            try 
+                            {
+                                cmd.ExecuteNonQuery();
+                            }
+                            catch (SqlException ex) when (ex.Number == 51000) 
+                            {
+                                // Ignore duplicate ID errors in bulk import, just skip
+                                // Or we could log it. For now, we continue.
+                                continue;
+                            }
+                        }
+                        transaction.Commit();
+                    }
+                    catch (Exception)
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                }
+            }
+        }
+
         public void InsertUser(UserModel user)
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))

@@ -12,12 +12,65 @@ namespace CrossSetaWeb.Controllers
         private readonly UserService _userService;
         private readonly DatabaseHelper _dbHelper;
         private readonly KYCService _kycService;
+        private readonly BulkRegistrationService _bulkService;
 
-        public RegistrationController(KYCService kycService)
+        public RegistrationController(KYCService kycService, BulkRegistrationService bulkService)
         {
             _userService = new UserService();
             _dbHelper = new DatabaseHelper();
             _kycService = kycService;
+            _bulkService = bulkService;
+        }
+
+        [HttpGet]
+        public IActionResult Bulk()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public IActionResult Bulk(IFormFile csvFile)
+        {
+            if (csvFile == null || csvFile.Length == 0)
+            {
+                ModelState.AddModelError("", "Please upload a valid CSV file.");
+                return View();
+            }
+
+            if (!csvFile.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+            {
+                ModelState.AddModelError("", "Only CSV files are allowed.");
+                return View();
+            }
+
+            try
+            {
+                var result = _bulkService.ProcessBulkFile(csvFile);
+
+                if (result.Errors.Count > 0)
+                {
+                    foreach (var error in result.Errors)
+                    {
+                        ModelState.AddModelError("", error);
+                    }
+                }
+
+                if (result.SuccessCount > 0)
+                {
+                    TempData["SuccessMessage"] = $"Bulk Import Complete! {result.SuccessCount} learners registered successfully. {result.FailureCount} failed.";
+                }
+                else
+                {
+                    ModelState.AddModelError("", "No records were successfully imported.");
+                }
+
+                return View();
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", "Fatal error during import: " + ex.Message);
+                return View();
+            }
         }
 
         [HttpGet]

@@ -64,12 +64,33 @@ Connects to an external trusted data source (simulating Department of Home Affai
 *   **Verification API**: Exposes endpoints to verify citizens against this local copy of the Home Affairs registry.
 *   **Code**: [HomeAffairsImportService.cs](CrossSetaDeduplicator/src/CrossSetaWeb/Services/HomeAffairsImportService.cs)
 
+### 🚦 Traffic Light System Automated Testing
+A fully automated test suite (`src/CrossSetaWeb/scripts/test_traffic_light.js`) is included to verify the "Traffic Light" logic against the live API.
+
+**To Run Tests:**
+```bash
+node src/CrossSetaWeb/scripts/test_traffic_light.js
+```
+
+**Test Data (Injected during Import):**
+*   **Green (Alive)**: Valid ID + Matching Surname
+*   **Red (Deceased)**: ID `0001010000001` (Injected Test Case) -> Returns DECEASED status.
+*   **Yellow (Mismatch)**: Valid ID + Wrong Surname
+
+### 5. 📑 Bulk Registration for Stakeholders
+*   **Dedicated Portal**: A separate page allowing other SETAs, Companies, and Training Providers to register learners in bulk.
+*   **CSV Upload**: Supports standard CSV format uploads for rapid data entry.
+*   **Batch Processing**: Efficiently processes hundreds of records in a single transaction.
+*   **Error Reporting**: Provides detailed feedback on successful registrations and any row-level errors.
+*   **Code**: [BulkRegistrationService.cs](CrossSetaDeduplicator/src/CrossSetaWeb/Services/BulkRegistrationService.cs)
+
 ---
 
 ## 🌟 Innovation & Bonus Features
 
 ### 📶 Offline Capability
 *   **Smart Queueing**: If the system detects network failure (or is toggled to "Simulate Offline"), verification requests are serialized and queued locally (`offline_verification_queue.json`).
+*   **Secure Storage**: All sensitive information stored for offline purposes is **encrypted at rest** to ensure data protection in case of device theft or compromise.
 *   **Automatic Processing**: The system is designed to process the queue automatically once connectivity is restored.
 
 ### 👤 Biometric & KYC Integration
