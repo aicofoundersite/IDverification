@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 function App() {
   const [searchId, setSearchId] = useState('')
+  const [surname, setSurname] = useState('')
   const [result, setResult] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -15,7 +16,11 @@ function App() {
     setResult(null)
 
     try {
-      const response = await fetch(`/api/verification/home-affairs/${searchId}`)
+      const url = surname 
+        ? `/api/verification/home-affairs/${searchId}?surname=${encodeURIComponent(surname)}`
+        : `/api/verification/home-affairs/${searchId}`
+      
+      const response = await fetch(url)
       if (!response.ok) {
         throw new Error('Network response was not ok')
       }
@@ -25,6 +30,30 @@ function App() {
       setError('Failed to verify ID. Please try again.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const getStatusColor = (res: any) => {
+    if (!res) return ''
+    if (!res.found) return 'bg-red-50 border-red-200'
+    
+    switch (res.verificationResult) {
+      case 'VERIFIED': return 'bg-green-50 border-green-200'
+      case 'MISMATCH': return 'bg-yellow-50 border-yellow-200'
+      case 'DECEASED': return 'bg-red-50 border-red-200'
+      default: return 'bg-green-50 border-green-200' // Fallback for legacy/simple lookup
+    }
+  }
+
+  const getStatusTitle = (res: any) => {
+    if (!res) return ''
+    if (!res.found) return 'Identity Not Found'
+    
+    switch (res.verificationResult) {
+      case 'VERIFIED': return 'Identity Verified'
+      case 'MISMATCH': return 'Identity Mismatch'
+      case 'DECEASED': return 'Identity Deceased'
+      default: return 'Identity Found'
     }
   }
 
@@ -69,18 +98,25 @@ function App() {
         {/* Search Section */}
         <div className="mt-16 bg-white p-8 rounded-xl shadow-lg border border-gray-100 max-w-2xl mx-auto">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Quick Verification Check</h2>
-          <form onSubmit={handleSearch} className="flex gap-4">
+          <form onSubmit={handleSearch} className="flex flex-col gap-4">
             <input
               type="text"
               placeholder="Enter South African ID Number"
               value={searchId}
               onChange={(e) => setSearchId(e.target.value)}
-              className="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+              className="px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            />
+            <input
+              type="text"
+              placeholder="Enter Surname (Optional)"
+              value={surname}
+              onChange={(e) => setSurname(e.target.value)}
+              className="px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
             />
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-3 bg-gray-800 text-white font-medium rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50"
+              className="px-6 py-3 bg-gray-800 text-white font-medium rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 w-full"
             >
               {loading ? 'Checking...' : 'Verify ID'}
             </button>
@@ -94,12 +130,20 @@ function App() {
           )}
 
           {result && (
-            <div className={`mt-6 p-6 rounded-lg border ${result.found ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+            <div className={`mt-6 p-6 rounded-lg border ${getStatusColor(result)}`}>
               {result.found ? (
                 <div className="text-left">
                   <div className="flex items-center gap-2 mb-4">
-                    <div className="h-3 w-3 rounded-full bg-green-500 animate-pulse"></div>
-                    <h3 className="text-lg font-bold text-green-800">Learner Found</h3>
+                    <div className={`h-3 w-3 rounded-full animate-pulse ${
+                      result.verificationResult === 'VERIFIED' ? 'bg-green-500' :
+                      result.verificationResult === 'MISMATCH' ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}></div>
+                    <h3 className={`text-lg font-bold ${
+                      result.verificationResult === 'VERIFIED' ? 'text-green-800' :
+                      result.verificationResult === 'MISMATCH' ? 'text-yellow-800' : 'text-red-800'
+                    }`}>
+                      {getStatusTitle(result)}
+                    </h3>
                   </div>
                   <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
                     <div>
@@ -123,9 +167,14 @@ function App() {
                   </div>
                 </div>
               ) : (
-                <div className="text-center text-yellow-800">
-                  <p className="font-medium">No record found for this ID.</p>
-                  <p className="text-sm mt-2">You can register this learner using the buttons above.</p>
+                <div className="text-center text-red-800">
+                  <div className="flex justify-center mb-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <p className="font-medium text-lg">Identity Not Found</p>
+                  <p className="text-sm mt-2">No record found for this ID in the Home Affairs database.</p>
                 </div>
               )}
             </div>

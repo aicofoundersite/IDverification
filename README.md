@@ -10,6 +10,7 @@ The application is fully containerized using **Docker** and deployed to **Fly.io
 
 *   **Live Web Portal**: [https://cross-seta-web-17655.fly.dev/](https://cross-seta-web-17655.fly.dev/)
 *   **Deployment Guide**: 👉 **[Read the Fly.io Deployment Guide](DEPLOY_TO_FLY.md)**
+*   **Code**: [Dockerfile](CrossSetaDeduplicator/src/CrossSetaWeb/Dockerfile)
 
 ### 📦 Home Affairs Database Import & Management
 To meet the requirement of a local, high-performance copy of the Home Affairs database, the system includes a robust import engine.
@@ -18,10 +19,12 @@ To meet the requirement of a local, high-performance copy of the Home Affairs da
     *   API Endpoint: `POST /api/import/trigger`
     *   Source: Imports from a secure Google Sheet (simulating the 5.3GB .bak file for the hackathon environment).
     *   Process: Fetches CSV -> Validates (Luhn/Dates) -> Sanitizes -> Batch Inserts (Transaction Safe).
+    *   **Code**: [ImportController.cs](CrossSetaDeduplicator/src/CrossSetaWeb/Controllers/Api/ImportController.cs)
 2.  **Validation Script**:
     *   A Node.js script is included to verify the integrity and performance of the imported data.
     *   Run: `node src/CrossSetaWeb/scripts/validate_home_affairs.js`
     *   **Performance**: Optimized for **sub-100ms** query response times (Verified avg: ~15ms).
+    *   **Code**: [validate_home_affairs.js](CrossSetaDeduplicator/src/CrossSetaWeb/scripts/validate_home_affairs.js)
 
 ---
 
@@ -32,28 +35,34 @@ A brand new, responsive **React + TypeScript** frontend provides a seamless user
 *   **Quick Verification**: Search bar for instant Learner ID verification.
 *   **Status Indicators**: Visual cues (Alive/Deceased) with clear "Traffic Light" coloring.
 *   **Registration Integration**: One-click access to User and Learner registration workflows.
+*   **Code**: [App.tsx](CrossSetaDeduplicator/src/CrossSetaWeb/ClientApp/src/App.tsx)
 
 ### 2. ✅ Input Validation
 *   **South African ID Standard**: Implements the **Luhn Algorithm (Modulus 10)** to mathematically validate ID numbers before they leave the client.
+    *   **Code**: [LuhnAttribute.cs](CrossSetaDeduplicator/src/CrossSetaWeb/Validation/LuhnAttribute.cs)
 *   **Format Enforcement**: Strict input masking ensures 13-digit numeric compliance.
 *   **Data Integrity**: Mandatory checks for Name and Surname to ensure complete records.
+    *   **Code**: [LearnerModel.cs](CrossSetaDeduplicator/src/CrossSetaWeb/Models/LearnerModel.cs)
 
 ### 2. ⚡ Real-Time Verification (Traffic Light Protocol)
 Connects to an external trusted data source (simulating Department of Home Affairs) to verify identity status in real-time.
 *   🟢 **GREEN (Verified)**: ID exists, is "Alive", and the Surname matches the official record.
 *   🟡 **YELLOW (Warning)**: ID is valid, but the Surname provided does not match the official record (potential marriage/typo).
 *   🔴 **RED (Invalid/Fraud)**: ID does not exist, or the person is marked as "Deceased".
+*   **Code**: [VerificationController.cs](CrossSetaDeduplicator/src/CrossSetaWeb/Controllers/Api/VerificationController.cs)
 
 ### 3. 🔒 Audit Trail & Compliance
 *   **Full Traceability**: Every single verification attempt is logged in the `ExternalVerificationLog` table.
 *   **Who, When, What**: Logs the **Timestamp**, **User** (System User), **Source** (e.g., HomeAffairs, KYC_SDK), and **Result Status**.
 *   **POPIA Compliance**: Mandatory "Consent" checkbox explicitly required before any verification can proceed.
+*   **Code**: [DatabaseHelper.cs](CrossSetaDeduplicator/src/CrossSetaWeb/DataAccess/DatabaseHelper.cs)
 
 ### 4. 🗄️ Home Affairs Database Integration
 *   **Secure Import**: Capabilities to import external Home Affairs databases (CSV/SQL exports) via encrypted channels (TLS 1.2+).
 *   **Validation Pipeline**: Multi-layer validation ensures only valid, consistent data enters the system (Type Check -> Luhn Check -> DOB Consistency).
 *   **CRUD & Sync**: Supports batch upserts with transaction safety and optimistic concurrency control.
 *   **Verification API**: Exposes endpoints to verify citizens against this local copy of the Home Affairs registry.
+*   **Code**: [HomeAffairsImportService.cs](CrossSetaDeduplicator/src/CrossSetaWeb/Services/HomeAffairsImportService.cs)
 
 ---
 
@@ -66,10 +75,12 @@ Connects to an external trusted data source (simulating Department of Home Affai
 ### 👤 Biometric & KYC Integration
 *   **Document Scanning**: Integrates with **Doubango KYC SDK** (or simulation) to scan physical ID documents (Passport, ID Card).
 *   **Facial Recognition**: Includes a biometric step to compare a live selfie against the photo in the scanned ID document.
+*   **Code**: [KYCService.cs](CrossSetaDeduplicator/src/CrossSetaWeb/Services/KYCService.cs) and [RegistrationController.cs](CrossSetaDeduplicator/src/CrossSetaWeb/Controllers/RegistrationController.cs)
 
 ### 🧠 Intelligent Deduplication
 *   **Fuzzy Matching**: Uses **Levenshtein Distance** algorithms to detect potential duplicates (e.g., "John Smith" vs "Jon Smith") alongside exact ID matching.
 *   **Cross-SETA Ready**: Designed to check against a centralized database of learners.
+*   **Code**: [DatabaseHelper.cs](CrossSetaDeduplicator/src/CrossSetaWeb/DataAccess/DatabaseHelper.cs)
 
 ---
 
@@ -149,14 +160,29 @@ Connects to an external trusted data source (simulating Department of Home Affai
 
 ## 🧪 Testing the "Traffic Light" Logic
 
-You can test the Real-Time Verification logic using the **Registration Wizard**:
+You can test the Real-Time Verification logic using the **Web Portal**, **Registration Wizard**, or the **Automated Test Script**.
+
+### Automated Testing
+We have included a dedicated Node.js script to automatically verify the traffic light logic against the Home Affairs database.
+
+1.  **Run the Test Script**:
+    ```bash
+    node src/CrossSetaWeb/scripts/test_traffic_light.js
+    ```
+2.  **Expected Output**:
+    The script will run through predefined test cases (Green, Yellow, Red) and output the results to the console.
+
+### Manual Testing Scenarios
 
 | Scenario | Input ID | Input Name | Input Surname | Expected Result |
 | :--- | :--- | :--- | :--- | :--- |
-| **Valid Citizen** | `9505055000081` | Thabo | Molefe | 🟢 **Green** (Verified) |
-| **Surname Mismatch** | `9505055000081` | Thabo | *Unknown* | 🟡 **Yellow** (Mismatch Warning) |
-| **Deceased** | `9001015000085` | Any | Any | 🔴 **Red** (Deceased Alert) |
+| **Valid Citizen** | `0002080806082` | Sichumile | Makaula | 🟢 **Green** (Verified) |
+| **Surname Mismatch** | `0002080806082` | Sichumile | *Smith* | 🟡 **Yellow** (Mismatch Warning) |
+| **Deceased** | `0001010000001` | Any | Any | 🔴 **Red** (Deceased Alert) |
+| **Not Found** | `9999999999999` | Any | Any | 🔴 **Red** (Identity Not Found) |
 | **Invalid Format** | `12345` | Any | Any | 🔴 **Red** (Invalid Format) |
+
+*Note: The IDs above are part of the demo dataset imported from the secure Google Sheet.*
 
 ---
 

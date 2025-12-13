@@ -29,4 +29,9 @@ RUN dotnet publish "CrossSetaWeb.csproj" -c Release -o /app/publish /p:UseAppHos
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+# Ensure permissions for file uploads (running as non-root)
+USER root
+RUN mkdir -p /app/wwwroot/uploads/kyc
+RUN chmod -R 777 /app/wwwroot
+USER $APP_UID
 ENTRYPOINT ["dotnet", "CrossSetaWeb.dll"]

@@ -23,6 +23,7 @@ Namespace CrossSetaDeduplicator.Services.External
     ''' </summary>
     Public Class MockHomeAffairsClient
         Private Shared _cachedData As Dictionary(Of String, HomeAffairsApiResponse)
+        ' Reverted to CSV due to .bak file incompatibility
         Private Const _sheetUrl As String = "https://docs.google.com/spreadsheets/d/1eQjxSsuOuXU20xG0gGgmR0Agn7WvudJd/export?format=csv&gid=572729852"
 
         ''' <summary>

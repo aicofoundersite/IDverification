@@ -25,7 +25,7 @@ namespace CrossSetaWeb.Controllers.Api
             // For now, we allow it for demonstration/hackathon purposes.
 
             // Source: Using the Google Sheet CSV as the "External Database Source" 
-            // since the provided .bak file requires SQL Server Restoration which is not feasible in this environment.
+            // since the provided .bak file (5.3GB) requires SQL Server Restoration and cannot be imported via the CSV parser.
             string csvUrl = "https://docs.google.com/spreadsheets/d/1eQjxSsuOuXU20xG0gGgmR0Agn7WvudJd/export?format=csv&gid=572729852";
             
             var result = await _importService.ImportFromUrlAsync(csvUrl);

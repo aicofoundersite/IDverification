@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Data.SqlClient;
 using CrossSetaWeb.Models;
 using CrossSetaWeb.Services;
@@ -10,11 +11,13 @@ namespace CrossSetaWeb.Controllers
     {
         private readonly UserService _userService;
         private readonly DatabaseHelper _dbHelper;
+        private readonly KYCService _kycService;
 
-        public RegistrationController()
+        public RegistrationController(KYCService kycService)
         {
             _userService = new UserService();
             _dbHelper = new DatabaseHelper();
+            _kycService = kycService;
         }
 
         [HttpGet]
@@ -51,11 +54,25 @@ namespace CrossSetaWeb.Controllers
         }
 
         [HttpPost]
-        public IActionResult Learner(LearnerModel model)
+        public async Task<IActionResult> Learner(LearnerModel model, IFormFile kycDocument)
         {
             if (!ModelState.IsValid)
             {
                 return View(model);
+            }
+
+            // KYC Document Verification
+            if (kycDocument != null && kycDocument.Length > 0)
+            {
+                var kycResult = await _kycService.VerifyDocumentAsync(kycDocument, model.NationalID);
+                if (!kycResult.IsSuccess)
+                {
+                    ModelState.AddModelError("KYC", $"KYC Verification Failed: {kycResult.ErrorMessage}");
+                    return View(model);
+                }
+                
+                // If KYC is successful, we mark the learner as verified
+                model.IsVerified = true;
             }
 
             try
