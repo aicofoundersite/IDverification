@@ -409,6 +409,61 @@ namespace CrossSetaWeb.DataAccess
             return null;
         }
 
+        public List<LearnerValidationResult> GetLearnerValidationResults()
+        {
+            var results = new List<LearnerValidationResult>();
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                string query = @"
+                    SELECT 
+                        L.NationalID, 
+                        L.FirstName, 
+                        L.LastName, 
+                        H.FirstName AS HA_FirstName, 
+                        H.Surname AS HA_Surname, 
+                        ISNULL(H.IsDeceased, 0) AS IsDeceased,
+                        CASE WHEN H.NationalID IS NOT NULL THEN 1 ELSE 0 END AS IsFound
+                    FROM Learners L
+                    LEFT JOIN HomeAffairsCitizens H ON L.NationalID = H.NationalID";
+
+                SqlCommand cmd = new SqlCommand(query, conn);
+                cmd.CommandTimeout = 300; // Increase timeout for large datasets
+
+                try
+                {
+                    conn.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            results.Add(new LearnerValidationResult
+                            {
+                                NationalID = reader["NationalID"].ToString(),
+                                FirstName = reader["FirstName"].ToString(),
+                                LastName = reader["LastName"].ToString(),
+                                HomeAffairsFirstName = reader["HA_FirstName"] == DBNull.Value ? null : reader["HA_FirstName"].ToString(),
+                                HomeAffairsSurname = reader["HA_Surname"] == DBNull.Value ? null : reader["HA_Surname"].ToString(),
+                                IsDeceased = Convert.ToBoolean(reader["IsDeceased"]),
+                                IsFoundInHomeAffairs = Convert.ToInt32(reader["IsFound"]) == 1
+                            });
+                        }
+                    }
+                }
+                catch (SqlException)
+                {
+                    // If HomeAffairsCitizens table doesn't exist, return basic list with IsFound=false
+                     return GetAllLearners().ConvertAll(l => new LearnerValidationResult 
+                     { 
+                         NationalID = l.NationalID, 
+                         FirstName = l.FirstName, 
+                         LastName = l.LastName, 
+                         IsFoundInHomeAffairs = false 
+                     });
+                }
+            }
+            return results;
+        }
+
         private LearnerModel MapReaderToLearner(SqlDataReader reader)
         {
             return new LearnerModel

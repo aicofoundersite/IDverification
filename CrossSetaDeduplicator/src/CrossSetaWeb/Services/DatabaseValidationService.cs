@@ -45,13 +45,15 @@ namespace CrossSetaWeb.Services
             _logger.LogInformation("Starting database validation against Home Affairs records.");
             if (jobId != null) _progressService.UpdateProgress(jobId, 0, 0, "Fetching Learners...");
 
-            var learners = _dbHelper.GetAllLearners();
-            _logger.LogInformation($"Retrieved {learners.Count} learners from database.");
+            // Optimized: Fetch all data with Home Affairs join in one query
+            var validationResults = _dbHelper.GetLearnerValidationResults();
+            _logger.LogInformation($"Retrieved {validationResults.Count} validation records from database.");
 
-            if (learners.Count <= 10)
+            // Fallback for empty DB (Development/Demo mode)
+            if (validationResults.Count <= 10)
             {
                 var path = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "wwwroot", "uploads", "LearnerData.csv");
-                var fallback = new List<LearnerModel>();
+                var fallbackList = new List<LearnerValidationResult>();
                 try
                 {
                     using (var reader = new System.IO.StreamReader(path))
@@ -66,47 +68,48 @@ namespace CrossSetaWeb.Services
                             if (parts.Count < 4) continue;
                             var id = parts[3].Trim();
                             if (!BulkRegistrationService.IsValidLuhn(id)) continue;
-                            var dobStr = parts[2].Trim();
-                            DateTime dob = DateTime.MinValue;
-                            string[] formats = { "dd/MM/yy", "dd/MM/yyyy", "yyyy-MM-dd" };
-                            if (DateTime.TryParseExact(dobStr, formats, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime parsed))
-                                dob = parsed;
-                            else if (DateTime.TryParse(dobStr, out parsed))
-                                dob = parsed;
-                            fallback.Add(new LearnerModel { FirstName = parts[0].Trim(), LastName = parts[1].Trim(), NationalID = id, DateOfBirth = dob, IsVerified = false });
+                            
+                            // Mock validation for fallback data
+                            fallbackList.Add(new LearnerValidationResult 
+                            { 
+                                FirstName = parts[0].Trim(), 
+                                LastName = parts[1].Trim(), 
+                                NationalID = id,
+                                IsFoundInHomeAffairs = false // Default to not found for local file
+                            });
                         }
                     }
                 }
                 catch {}
-                if (fallback.Count > 0) learners = fallback;
+                if (fallbackList.Count > 0) validationResults = fallbackList;
             }
 
             var result = new DatabaseValidationResult
             {
-                TotalRecords = learners.Count
+                TotalRecords = validationResults.Count
             };
 
-            if (jobId != null) _progressService.UpdateProgress(jobId, 0, learners.Count, "Validating...");
+            if (jobId != null) _progressService.UpdateProgress(jobId, 0, validationResults.Count, "Validating...");
 
             int processed = 0;
-            foreach (var learner in learners)
+            foreach (var item in validationResults)
             {
                 processed++;
-                // Update progress every 10 records or if total is small
-                if (jobId != null && (processed % 10 == 0 || learners.Count < 50))
+                // Update progress every 1000 records to reduce overhead (was 10)
+                if (jobId != null && (processed % 1000 == 0 || validationResults.Count < 50))
                 {
-                    _progressService.UpdateProgress(jobId, processed, learners.Count, $"Processing {processed}/{learners.Count}");
+                    _progressService.UpdateProgress(jobId, processed, validationResults.Count, $"Processing {processed}/{validationResults.Count}");
                 }
 
                 var detail = new ValidationDetail
                 {
-                    NationalID = learner.NationalID,
-                    FirstName = learner.FirstName,
-                    LastName = learner.LastName
+                    NationalID = item.NationalID,
+                    FirstName = item.FirstName,
+                    LastName = item.LastName
                 };
 
                 // 1. Basic format check (Luhn)
-                if (!BulkRegistrationService.IsValidLuhn(learner.NationalID))
+                if (!BulkRegistrationService.IsValidLuhn(item.NationalID))
                 {
                      detail.Status = "InvalidFormat";
                      detail.Message = "Invalid ID Number format (Luhn check failed).";
@@ -116,15 +119,13 @@ namespace CrossSetaWeb.Services
                 }
 
                 // 2. Check Home Affairs
-                var citizen = _dbHelper.GetHomeAffairsCitizen(learner.NationalID);
-
-                if (citizen == null)
+                if (!item.IsFoundInHomeAffairs)
                 {
                     detail.Status = "NotFound";
                     detail.Message = "Identity Number not found in Home Affairs database.";
                     result.NotFoundCount++;
                 }
-                else if (citizen.IsDeceased)
+                else if (item.IsDeceased)
                 {
                     detail.Status = "Deceased";
                     detail.Message = "Learner is marked as DECEASED in Home Affairs database.";
@@ -133,10 +134,10 @@ namespace CrossSetaWeb.Services
                 else
                 {
                     // 3. Surname Check
-                    if (!string.Equals(learner.LastName?.Trim(), citizen.Surname?.Trim(), StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(item.LastName?.Trim(), item.HomeAffairsSurname?.Trim(), StringComparison.OrdinalIgnoreCase))
                     {
                         detail.Status = "SurnameMismatch";
-                        detail.Message = $"Surname Mismatch. Database: '{learner.LastName}', Home Affairs: '{citizen.Surname}'";
+                        detail.Message = $"Surname Mismatch. Database: '{item.LastName}', Home Affairs: '{item.HomeAffairsSurname}'";
                         result.SurnameMismatchCount++;
                     }
                     else

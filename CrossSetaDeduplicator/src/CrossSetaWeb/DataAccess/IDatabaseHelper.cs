@@ -13,5 +13,6 @@ namespace CrossSetaWeb.DataAccess
         List<LearnerModel> GetAllLearners();
         LearnerModel? GetLearnerByNationalID(string nationalID);
         HomeAffairsCitizen GetHomeAffairsCitizen(string nationalID);
+        List<LearnerValidationResult> GetLearnerValidationResults();
     }
 }
