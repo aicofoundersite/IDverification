@@ -8,6 +8,11 @@ public class HomeController : Controller
 {
     public IActionResult Index()
     {
+        var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "index.html");
+        if (System.IO.File.Exists(path))
+        {
+            return PhysicalFile(path, "text/html");
+        }
         return View();
     }
 

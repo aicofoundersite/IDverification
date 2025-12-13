@@ -104,6 +104,81 @@ namespace CrossSetaWeb.DataAccess
             }
         }
 
+        public void InitializeHomeAffairsTable()
+        {
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                string sql = @"
+                    IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='HomeAffairsCitizens' AND xtype='U')
+                    BEGIN
+                        CREATE TABLE HomeAffairsCitizens (
+                            NationalID NVARCHAR(13) PRIMARY KEY,
+                            FirstName NVARCHAR(100),
+                            Surname NVARCHAR(100),
+                            DateOfBirth DATE,
+                            IsDeceased BIT DEFAULT 0,
+                            LastUpdated DATETIME DEFAULT GETDATE(),
+                            VerificationSource NVARCHAR(50),
+                            RowVersion TIMESTAMP
+                        );
+                        CREATE INDEX IX_HomeAffairsCitizens_Surname ON HomeAffairsCitizens(Surname);
+                    END";
+                using (SqlCommand cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public void BatchImportHomeAffairsData(List<HomeAffairsCitizen> citizens)
+        {
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (SqlTransaction transaction = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        foreach (var citizen in citizens)
+                        {
+                            string sql = @"
+                                MERGE HomeAffairsCitizens AS target
+                                USING (SELECT @NationalID, @FirstName, @Surname, @DateOfBirth, @IsDeceased, @VerificationSource) AS source (NationalID, FirstName, Surname, DateOfBirth, IsDeceased, VerificationSource)
+                                ON (target.NationalID = source.NationalID)
+                                WHEN MATCHED THEN
+                                    UPDATE SET FirstName = source.FirstName, 
+                                               Surname = source.Surname, 
+                                               DateOfBirth = source.DateOfBirth,
+                                               IsDeceased = source.IsDeceased,
+                                               LastUpdated = GETDATE(),
+                                               VerificationSource = source.VerificationSource
+                                WHEN NOT MATCHED THEN
+                                    INSERT (NationalID, FirstName, Surname, DateOfBirth, IsDeceased, VerificationSource)
+                                    VALUES (source.NationalID, source.FirstName, source.Surname, source.DateOfBirth, source.IsDeceased, source.VerificationSource);";
+
+                            using (SqlCommand cmd = new SqlCommand(sql, conn, transaction))
+                            {
+                                cmd.Parameters.AddWithValue("@NationalID", citizen.NationalID);
+                                cmd.Parameters.AddWithValue("@FirstName", citizen.FirstName);
+                                cmd.Parameters.AddWithValue("@Surname", citizen.Surname);
+                                cmd.Parameters.AddWithValue("@DateOfBirth", citizen.DateOfBirth);
+                                cmd.Parameters.AddWithValue("@IsDeceased", citizen.IsDeceased);
+                                cmd.Parameters.AddWithValue("@VerificationSource", "BulkImport");
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+                        transaction.Commit();
+                    }
+                    catch (Exception)
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                }
+            }
+        }
+
         public void InsertUser(UserModel user)
         {
             using (SqlConnection conn = new SqlConnection(_connectionString))
@@ -126,6 +201,95 @@ namespace CrossSetaWeb.DataAccess
                 conn.Open();
                 cmd.ExecuteNonQuery();
             }
+        }
+
+        public LearnerModel? GetLearnerByNationalID(string nationalID)
+        {
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                // We can use a simple query or the sp_FindPotentialDuplicates if suitable.
+                // For exact lookup, a simple query is faster/easier for now if we just want to verify existence.
+                string query = "SELECT TOP 1 * FROM Learners WHERE NationalID = @NationalID";
+                SqlCommand cmd = new SqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@NationalID", nationalID);
+
+                conn.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return MapReaderToLearner(reader);
+                    }
+                }
+            }
+            return null;
+        }
+
+        public HomeAffairsCitizen GetHomeAffairsCitizen(string nationalID)
+        {
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                // Ensure table exists just in case (optional, but good for stability)
+                // InitializeHomeAffairsTable(); 
+
+                string sql = "SELECT * FROM HomeAffairsCitizens WHERE NationalID = @NationalID";
+                SqlCommand cmd = new SqlCommand(sql, conn);
+                cmd.Parameters.AddWithValue("@NationalID", nationalID);
+                
+                try 
+                {
+                    conn.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            return new HomeAffairsCitizen
+                            {
+                                NationalID = reader["NationalID"].ToString(),
+                                FirstName = reader["FirstName"].ToString(),
+                                Surname = reader["Surname"].ToString(),
+                                DateOfBirth = Convert.ToDateTime(reader["DateOfBirth"]),
+                                IsDeceased = Convert.ToBoolean(reader["IsDeceased"]),
+                                VerificationSource = reader["VerificationSource"] == DBNull.Value ? "Unknown" : reader["VerificationSource"].ToString()
+                            };
+                        }
+                    }
+                }
+                catch (SqlException) 
+                {
+                    // Table might not exist if import hasn't run.
+                    return null;
+                }
+            }
+            return null;
+        }
+
+        private LearnerModel MapReaderToLearner(SqlDataReader reader)
+        {
+            return new LearnerModel
+            {
+                LearnerID = Convert.ToInt32(reader["LearnerID"]),
+                NationalID = reader["NationalID"].ToString(),
+                FirstName = reader["FirstName"].ToString(),
+                LastName = reader["LastName"].ToString(),
+                DateOfBirth = Convert.ToDateTime(reader["DateOfBirth"]),
+                Gender = reader["Gender"] == DBNull.Value ? null : reader["Gender"].ToString(),
+                Role = reader["Role"] == DBNull.Value ? "Learner" : reader["Role"].ToString(),
+                BiometricHash = reader["BiometricHash"] == DBNull.Value ? null : reader["BiometricHash"].ToString(),
+                IsVerified = Convert.ToBoolean(reader["IsVerified"]),
+                // Add SetaName safely if column exists or default
+                SetaName = HasColumn(reader, "SetaName") ? (reader["SetaName"] == DBNull.Value ? "Unknown" : reader["SetaName"].ToString()) : "Unknown"
+            };
+        }
+
+        private bool HasColumn(SqlDataReader reader, string columnName)
+        {
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                if (reader.GetName(i).Equals(columnName, StringComparison.InvariantCultureIgnoreCase))
+                    return true;
+            }
+            return false;
         }
 
         private object GetValue(string value)
