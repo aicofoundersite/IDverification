@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using CrossSetaWeb.Models;
-using CrossSetaWeb.DataAccess;
+using CrossSetaLogic.Models;
+using CrossSetaLogic.DataAccess;
 using System.Threading.Tasks;
 using System;
 using Microsoft.AspNetCore.Authentication;
@@ -49,7 +49,7 @@ namespace CrossSetaWeb.Controllers
                     {
                         await SignInUser(session.User.Email);
                         TempData["SuccessMessage"] = "Registration successful!";
-                        return RedirectToAction("Index", "Home");
+                        return RedirectToAction("Bulk", "Registration");
                     }
                     else
                     {
@@ -71,7 +71,7 @@ namespace CrossSetaWeb.Controllers
         {
             if (User.Identity.IsAuthenticated)
             {
-                return RedirectToAction("Index", "Home");
+                return RedirectToAction("Bulk", "Registration");
             }
             return View();
         }
@@ -94,7 +94,7 @@ namespace CrossSetaWeb.Controllers
                     await SignInUser(session.User.Email);
                     _dbHelper.LogUserActivity(session.User.Email, "Login", HttpContext.Connection.RemoteIpAddress?.ToString(), "Supabase Login");
                     TempData["SuccessMessage"] = $"Welcome back, {session.User.Email}!";
-                    return RedirectToAction("Index", "Home");
+                    return RedirectToAction("Bulk", "Registration");
                 }
             }
             catch (Exception ex)

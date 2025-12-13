@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using CrossSetaWeb.DataAccess;
-using CrossSetaWeb.Models;
+using CrossSetaLogic.DataAccess;
+using CrossSetaLogic.Models;
 using Microsoft.Extensions.Logging;
 using System;
 
@@ -12,12 +12,12 @@ namespace CrossSetaWeb.Controllers.Api
     [Authorize]
     public class VerificationController : ControllerBase
     {
-        private readonly DatabaseHelper _dbHelper;
+        private readonly IDatabaseHelper _dbHelper;
         private readonly ILogger<VerificationController> _logger;
 
-        public VerificationController(ILogger<VerificationController> logger)
+        public VerificationController(ILogger<VerificationController> logger, IDatabaseHelper dbHelper)
         {
-            _dbHelper = new DatabaseHelper();
+            _dbHelper = dbHelper;
             _logger = logger;
         }
 

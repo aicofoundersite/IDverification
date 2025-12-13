@@ -1,0 +1,143 @@
+@{
+    ViewData["Title"] = "Documentation";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-3">
+            <nav id="doc-nav" class="nav flex-column sticky-top" style="top: 80px;">
+                <a class="nav-link text-success fw-bold" href="#overview">Overview</a>
+                <a class="nav-link text-secondary" href="#features">Key Features</a>
+                <a class="nav-link text-secondary" href="#architecture">Architecture</a>
+                <a class="nav-link text-secondary" href="#getting-started">Getting Started</a>
+                <a class="nav-link text-secondary" href="#api-reference">API Reference</a>
+            </nav>
+        </div>
+        
+        <div class="col-md-9">
+            <h1 class="display-4 mb-4 text-success border-bottom pb-2">Cross-SETA Deduplication System</h1>
+            
+            <section id="overview" class="mb-5">
+                <h2>Overview</h2>
+                <p class="lead">
+                    The Cross-SETA Deduplication System is a robust web platform designed to eliminate duplicate learner registrations across multiple Sector Education and Training Authorities (SETAs).
+                </p>
+                <p>
+                    By leveraging real-time validation against Department of Home Affairs data and implementing advanced fuzzy matching algorithms, the system ensures data integrity and prevents fraudulent or erroneous "double-dipping" of grant funding.
+                </p>
+            </section>
+
+            <section id="features" class="mb-5">
+                <h2>Key Features</h2>
+                
+                <div class="card mb-3 border-success">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">1. Deduplication Engine</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Prevents a learner from registering for multiple concurrent learnerships across different SETAs.</p>
+                        <ul>
+                            <li><strong>Real-time Check:</strong> Validates ID numbers against the central database during registration.</li>
+                            <li><strong>Conflict Resolution:</strong> Flags potential duplicates for manual review.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card mb-3 border-success">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">2. Home Affairs Validation</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Verifies the authenticity of learner identities against simulated Home Affairs records.</p>
+                        <ul>
+                            <li><strong>Identity Verification:</strong> Confirms First Name, Surname, and Date of Birth match the ID number.</li>
+                            <li><strong>Status Check:</strong> Flags deceased individuals to prevent fraud.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card mb-3 border-success">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">3. Bulk Processing</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Allows SETA administrators to upload large datasets for batch processing.</p>
+                        <ul>
+                            <li><strong>CSV Import:</strong> Supports standardized CSV templates for learner data.</li>
+                            <li><strong>Async Validation:</strong> Processes records in the background with progress tracking.</li>
+                            <li><strong>Detailed Reporting:</strong> Generates reports on successful imports and validation failures.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="architecture" class="mb-5">
+                <h2>System Architecture</h2>
+                <p>The solution is built using a modern, scalable stack:</p>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Technology</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Frontend</strong></td>
+                            <td>ASP.NET Core MVC</td>
+                            <td>Responsive web interface with Bootstrap 5.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Core Logic</strong></td>
+                            <td>Visual Basic .NET (VB.NET)</td>
+                            <td>Business rules, validation logic, and data processing encapsulated in a separate class library (`CrossSetaLogic`).</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Database</strong></td>
+                            <td>SQL Server (Azure/Local)</td>
+                            <td>Relational data storage for Learners, Users, and Activity Logs.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Authentication</strong></td>
+                            <td>Supabase Auth</td>
+                            <td>Secure user management and JWT-based authentication.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Deployment</strong></td>
+                            <td>Fly.io (Docker)</td>
+                            <td>Containerized deployment for high availability and easy scaling.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="getting-started" class="mb-5">
+                <h2>Getting Started</h2>
+                
+                <h5>Prerequisites</h5>
+                <ul>
+                    <li>.NET 8.0 SDK or later</li>
+                    <li>SQL Server</li>
+                    <li>Supabase Account</li>
+                </ul>
+
+                <h5>Installation</h5>
+                <pre class="bg-light p-3 rounded"><code>git clone https://github.com/your-repo/IDverification.git
+cd CrossSetaDeduplicator
+dotnet restore
+dotnet run --project src/CrossSetaWeb/CrossSetaWeb.csproj</code></pre>
+            </section>
+            
+            <section id="api-reference" class="mb-5">
+                <h2>API Reference</h2>
+                <p>The system exposes several REST endpoints for integration:</p>
+                <ul>
+                    <li><code>GET /api/Verification/{id}</code> - Check if a learner exists in the local database.</li>
+                    <li><code>GET /api/Verification/home-affairs/{id}</code> - Verify an ID against Home Affairs records.</li>
+                    <li><code>POST /api/Import/trigger</code> - Trigger a bulk import from an external source.</li>
+                </ul>
+            </section>
+        </div>
+    </div>
+</div>

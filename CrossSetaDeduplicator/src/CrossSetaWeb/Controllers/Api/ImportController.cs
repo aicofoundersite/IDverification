@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using CrossSetaWeb.Services;
-using CrossSetaWeb.DataAccess;
+using CrossSetaLogic.Services;
+using CrossSetaLogic.DataAccess;
 using System.Threading.Tasks;
 using System.IO;
 

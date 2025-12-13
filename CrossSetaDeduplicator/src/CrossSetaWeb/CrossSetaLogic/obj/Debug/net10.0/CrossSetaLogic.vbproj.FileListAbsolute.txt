@@ -1,0 +1,13 @@
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/CrossSetaLogic/obj/Debug/net10.0/CrossSetaLogic.vbproj.AssemblyReference.cache
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/CrossSetaLogic/obj/Debug/net10.0/CrossSetaLogic.GeneratedMSBuildEditorConfig.editorconfig
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/CrossSetaLogic/obj/Debug/net10.0/CrossSetaLogic.AssemblyInfoInputs.cache
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/CrossSetaLogic/obj/Debug/net10.0/CrossSetaLogic.AssemblyInfo.vb
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/CrossSetaLogic/obj/Debug/net10.0/CrossSetaLogic.vbproj.CoreCompileInputs.cache
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/CrossSetaLogic/obj/Debug/net10.0/CrossSetaLogic.sourcelink.json
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/CrossSetaLogic/bin/Debug/net10.0/CrossSetaLogic.deps.json
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/CrossSetaLogic/bin/Debug/net10.0/CrossSetaLogic.dll
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/CrossSetaLogic/bin/Debug/net10.0/CrossSetaLogic.pdb
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/CrossSetaLogic/obj/Debug/net10.0/CrossSetaLogic.dll
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/CrossSetaLogic/obj/Debug/net10.0/refint/CrossSetaLogic.dll
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/CrossSetaLogic/obj/Debug/net10.0/CrossSetaLogic.pdb
+/Users/sabelosibanda/Documents/GitHub/IDverification/CrossSetaDeduplicator/src/CrossSetaWeb/CrossSetaLogic/obj/Debug/net10.0/ref/CrossSetaLogic.dll

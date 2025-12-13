@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Data.SqlClient;
-using CrossSetaWeb.Models;
-using CrossSetaWeb.Services;
-using CrossSetaWeb.DataAccess;
+using CrossSetaLogic.Models;
+using CrossSetaLogic.Services;
+using CrossSetaLogic.DataAccess;
 using Microsoft.AspNetCore.Authorization;
 
 namespace CrossSetaWeb.Controllers
@@ -18,7 +18,7 @@ namespace CrossSetaWeb.Controllers
         private readonly IHomeAffairsImportService _importService;
 
         private readonly IValidationProgressService _progressService;
-        private readonly RegistrationController _controller; // Self-ref not needed, just for context
+        // private readonly RegistrationController _controller; // Self-ref not needed
 
         public RegistrationController(
             IUserService userService, 

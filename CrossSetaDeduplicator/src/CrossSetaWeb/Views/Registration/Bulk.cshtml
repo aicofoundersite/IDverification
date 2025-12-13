@@ -396,7 +396,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var log in (List<CrossSetaWeb.Models.UserActivityLog>)ViewBag.UserActivityLogs)
+                            @foreach (var log in (List<CrossSetaLogic.Models.UserActivityLog>)ViewBag.UserActivityLogs)
                             {
                                 <tr>
                                     <td>@log.ActivityDate.ToString("yyyy-MM-dd HH:mm:ss")</td>

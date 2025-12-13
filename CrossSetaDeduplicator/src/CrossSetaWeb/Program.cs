@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using CrossSetaLogic.DataAccess;
+using CrossSetaLogic.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,13 +21,13 @@ builder.Services.AddScoped<Supabase.Client>(provider => {
     return new Supabase.Client(url, key);
 });
 
-builder.Services.AddScoped<CrossSetaWeb.DataAccess.IDatabaseHelper, CrossSetaWeb.DataAccess.DatabaseHelper>();
-builder.Services.AddScoped<CrossSetaWeb.Services.IUserService, CrossSetaWeb.Services.UserService>();
-builder.Services.AddScoped<CrossSetaWeb.Services.IKYCService, CrossSetaWeb.Services.KYCService>();
-builder.Services.AddScoped<CrossSetaWeb.Services.IBulkRegistrationService, CrossSetaWeb.Services.BulkRegistrationService>();
-builder.Services.AddScoped<CrossSetaWeb.Services.IDatabaseValidationService, CrossSetaWeb.Services.DatabaseValidationService>();
-builder.Services.AddScoped<CrossSetaWeb.Services.IHomeAffairsImportService, CrossSetaWeb.Services.HomeAffairsImportService>();
-builder.Services.AddSingleton<CrossSetaWeb.Services.IValidationProgressService, CrossSetaWeb.Services.ValidationProgressService>();
+builder.Services.AddScoped<IDatabaseHelper, DatabaseHelper>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IKYCService, KYCService>();
+builder.Services.AddScoped<IBulkRegistrationService, BulkRegistrationService>();
+builder.Services.AddScoped<IDatabaseValidationService, DatabaseValidationService>();
+builder.Services.AddScoped<IHomeAffairsImportService, HomeAffairsImportService>();
+builder.Services.AddSingleton<IValidationProgressService, ValidationProgressService>();
 
 var app = builder.Build();
 
@@ -54,8 +56,8 @@ app.MapControllerRoute(
 using (var scope = app.Services.CreateScope())
 {
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    var bulkService = scope.ServiceProvider.GetRequiredService<CrossSetaWeb.Services.IBulkRegistrationService>();
-    var dbHelper = scope.ServiceProvider.GetRequiredService<CrossSetaWeb.DataAccess.IDatabaseHelper>();
+    var bulkService = scope.ServiceProvider.GetRequiredService<IBulkRegistrationService>();
+    var dbHelper = scope.ServiceProvider.GetRequiredService<IDatabaseHelper>();
     
     try 
     {

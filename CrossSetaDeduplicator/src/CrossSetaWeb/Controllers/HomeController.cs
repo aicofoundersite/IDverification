@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using CrossSetaWeb.Models;
+using CrossSetaLogic.Models;
 using Microsoft.AspNetCore.Authorization;
 
 namespace CrossSetaWeb.Controllers;
@@ -17,7 +17,7 @@ public class HomeController : Controller
         return View();
     }
 
-    public IActionResult Privacy()
+    public IActionResult Documentation()
     {
         return View();
     }

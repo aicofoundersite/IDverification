@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CrossSetaWeb")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+dc9b6b8fa80c59033779cd4c8034cbc3518d6452")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3ad887668e85cd7009599fa74441760e0014956f")]
 [assembly: System.Reflection.AssemblyProductAttribute("CrossSetaWeb")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CrossSetaWeb")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
