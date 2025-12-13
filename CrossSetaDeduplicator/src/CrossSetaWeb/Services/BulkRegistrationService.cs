@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Text.RegularExpressions;
 using CrossSetaWeb.DataAccess;
 using CrossSetaWeb.Models;
@@ -40,9 +41,20 @@ namespace CrossSetaWeb.Services
                     {
                         rowNumber++;
                         if (string.IsNullOrWhiteSpace(line)) continue;
+                        
+                        // Heuristic check: if the first line contains "Identity Number", treat as header
                         if (isHeader)
                         {
-                            isHeader = false;
+                            if (line.Contains("Identity Number", StringComparison.OrdinalIgnoreCase) || 
+                                line.Contains("First Name", StringComparison.OrdinalIgnoreCase))
+                            {
+                                isHeader = false;
+                                continue;
+                            }
+                            isHeader = false; // If not header-like, treat as data? Or just skip 1st line always?
+                            // Safe bet: Always skip first line if it's the very first line read.
+                            // But if user uploads NO header, we lose data.
+                            // Given the requirement "use the csv format in this file", which HAS headers, we stick to skipping first line.
                             continue;
                         }
 
@@ -121,12 +133,13 @@ namespace CrossSetaWeb.Services
 
         private LearnerModel ParseLine(string line, int rowNumber)
         {
+            // Robust CSV Parsing to handle quotes
+            var parts = ParseCsvLine(line);
+
             // Expected CSV Format from Google Sheet:
             // First Name / s, Surname, Date of Birth, Identity Number, Target #, Intervention Name, Period
             // Index: 0, 1, 2, 3
-            var parts = line.Split(',');
-
-            if (parts.Length < 4) throw new Exception("Insufficient columns. Required: First Name, Surname, Date of Birth, Identity Number");
+            if (parts.Count < 4) throw new Exception("Insufficient columns. Required: First Name, Surname, Date of Birth, Identity Number");
 
             var learner = new LearnerModel
             {
@@ -162,15 +175,45 @@ namespace CrossSetaWeb.Services
                 }
             }
             
-            // Map optional/extra fields if needed
-            // parts[4] = Target #
-            // parts[5] = Intervention Name -> Could map to a generic field if available, or ignore
-            // parts[6] = Period
-
             // Default values for fields not in this specific CSV format
             learner.Gender = "Unknown"; // Not in CSV
             
             return learner;
+        }
+
+        private List<string> ParseCsvLine(string line)
+        {
+            var values = new List<string>();
+            bool inQuotes = false;
+            var currentValue = new StringBuilder();
+
+            for (int i = 0; i < line.Length; i++)
+            {
+                char c = line[i];
+                if (c == '\"')
+                {
+                    if (inQuotes && i + 1 < line.Length && line[i + 1] == '\"')
+                    {
+                        currentValue.Append('\"'); // Escaped quote
+                        i++;
+                    }
+                    else
+                    {
+                        inQuotes = !inQuotes;
+                    }
+                }
+                else if (c == ',' && !inQuotes)
+                {
+                    values.Add(currentValue.ToString());
+                    currentValue.Clear();
+                }
+                else
+                {
+                    currentValue.Append(c);
+                }
+            }
+            values.Add(currentValue.ToString());
+            return values;
         }
 
         private bool IsValidEmail(string email)
