@@ -179,19 +179,22 @@ namespace CrossSetaWeb.DataAccess
             }
         }
 
-        public void BatchInsertLearners(List<LearnerModel> learners)
+        public List<BulkInsertError> BatchInsertLearners(List<LearnerModel> learners)
         {
+            var errors = new List<BulkInsertError>();
+            
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (SqlTransaction transaction = conn.BeginTransaction())
+                // Removed the single transaction to allow partial success. 
+                // Each insert is its own atomic operation.
+                
+                foreach (var learner in learners)
                 {
                     try
                     {
-                        foreach (var learner in learners)
+                        using (SqlCommand cmd = new SqlCommand("sp_InsertLearner", conn))
                         {
-                            // We use the existing stored procedure for consistency
-                            SqlCommand cmd = new SqlCommand("sp_InsertLearner", conn, transaction);
                             cmd.CommandType = CommandType.StoredProcedure;
 
                             // Basic Fields
@@ -222,11 +225,11 @@ namespace CrossSetaWeb.DataAccess
                             cmd.Parameters.AddWithValue("@PopiActDate", learner.PopiActDate == DateTime.MinValue ? DBNull.Value : (object)learner.PopiActDate);
                             cmd.Parameters.AddWithValue("@IsResidentialAddressSameAsPostal", learner.IsResidentialAddressSameAsPostal);
 
-                            // Contact Details - simplified for bulk if needed, or mapped if CSV supports
+                            // Contact Details
                             cmd.Parameters.AddWithValue("@PhoneNumber", GetValue(learner.PhoneNumber));
                             cmd.Parameters.AddWithValue("@EmailAddress", GetValue(learner.EmailAddress));
                             
-                            // Fill optional fields with nulls to avoid SP errors if not in CSV
+                            // Fill optional fields with nulls
                             cmd.Parameters.AddWithValue("@POBox", DBNull.Value);
                             cmd.Parameters.AddWithValue("@CellphoneNumber", DBNull.Value);
                             cmd.Parameters.AddWithValue("@StreetName", DBNull.Value);
@@ -249,26 +252,34 @@ namespace CrossSetaWeb.DataAccess
                             cmd.Parameters.AddWithValue("@LastSchoolAttended", DBNull.Value);
                             cmd.Parameters.AddWithValue("@LastSchoolYear", DBNull.Value);
 
-                            try 
-                            {
-                                cmd.ExecuteNonQuery();
-                            }
-                            catch (SqlException ex) when (ex.Number == 51000) 
-                            {
-                                // Ignore duplicate ID errors in bulk import, just skip
-                                // Or we could log it. For now, we continue.
-                                continue;
-                            }
+                            cmd.ExecuteNonQuery();
                         }
-                        transaction.Commit();
                     }
-                    catch (Exception)
+                    catch (SqlException ex)
                     {
-                        transaction.Rollback();
-                        throw;
+                        if (ex.Number == 51000 || ex.Number == 2627 || ex.Number == 2601)
+                        {
+                            errors.Add(new BulkInsertError { NationalID = learner.NationalID, Message = "Duplicate Record", IsDuplicate = true });
+                        }
+                        else
+                        {
+                            errors.Add(new BulkInsertError { NationalID = learner.NationalID, Message = $"Database Error: {ex.Message}", IsDuplicate = false });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        errors.Add(new BulkInsertError { NationalID = learner.NationalID, Message = $"System Error: {ex.Message}", IsDuplicate = false });
                     }
                 }
             }
+            return errors;
+        }
+
+        public class BulkInsertError
+        {
+            public string NationalID { get; set; }
+            public string Message { get; set; }
+            public bool IsDuplicate { get; set; }
         }
 
         public void InsertUser(UserModel user)

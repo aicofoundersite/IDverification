@@ -6,21 +6,27 @@ using CrossSetaWeb.DataAccess;
 using CrossSetaWeb.Models;
 using Microsoft.AspNetCore.Http;
 
+using Microsoft.Extensions.Logging;
+
 namespace CrossSetaWeb.Services
 {
     public class BulkRegistrationService
     {
         private readonly DatabaseHelper _dbHelper;
+        private readonly ILogger<BulkRegistrationService> _logger;
 
-        public BulkRegistrationService(DatabaseHelper dbHelper)
+        public BulkRegistrationService(DatabaseHelper dbHelper, ILogger<BulkRegistrationService> logger)
         {
             _dbHelper = dbHelper;
+            _logger = logger;
         }
 
         public BulkImportResult ProcessBulkFile(IFormFile file)
         {
+            _logger.LogInformation("Starting bulk import for file: {FileName}, Size: {Length}", file.FileName, file.Length);
             var result = new BulkImportResult();
-            var learners = new List<LearnerModel>();
+            var validLearners = new List<LearnerModel>();
+            var rowMap = new Dictionary<string, int>(); // Map NationalID to RowNumber for error reporting
 
             try
             {
@@ -42,63 +48,144 @@ namespace CrossSetaWeb.Services
 
                         try
                         {
-                            var learner = ParseLine(line);
-                            learners.Add(learner);
-                            result.SuccessCount++;
+                            var learner = ParseLine(line, rowNumber);
+                            
+                            // Check for duplicates within the file itself
+                            if (rowMap.ContainsKey(learner.NationalID))
+                            {
+                                string msg = "Duplicate ID within the same file.";
+                                result.ErrorDetails.Add(new BulkErrorDetail 
+                                { 
+                                    RowNumber = rowNumber, 
+                                    NationalID = learner.NationalID, 
+                                    Message = msg 
+                                });
+                                result.FailureCount++;
+                                _logger.LogWarning("Row {RowNumber}: {Message}", rowNumber, msg);
+                                continue;
+                            }
+
+                            validLearners.Add(learner);
+                            rowMap[learner.NationalID] = rowNumber;
                         }
                         catch (Exception ex)
                         {
-                            result.Errors.Add($"Row {rowNumber}: {ex.Message}");
+                            result.ErrorDetails.Add(new BulkErrorDetail 
+                            { 
+                                RowNumber = rowNumber, 
+                                NationalID = "Unknown", 
+                                Message = ex.Message 
+                            });
                             result.FailureCount++;
+                            _logger.LogWarning("Row {RowNumber} Parse Error: {Message}", rowNumber, ex.Message);
                         }
                     }
                 }
 
-                if (learners.Count > 0)
+                if (validLearners.Count > 0)
                 {
-                    _dbHelper.BatchInsertLearners(learners);
+                    _logger.LogInformation("Parsed {Count} valid records. Attempting DB insertion.", validLearners.Count);
+                    
+                    // Attempt DB Insertion
+                    var dbErrors = _dbHelper.BatchInsertLearners(validLearners);
+
+                    // Map DB errors back to results
+                    foreach (var error in dbErrors)
+                    {
+                        int row = rowMap.ContainsKey(error.NationalID) ? rowMap[error.NationalID] : 0;
+                        result.ErrorDetails.Add(new BulkErrorDetail
+                        {
+                            RowNumber = row,
+                            NationalID = error.NationalID,
+                            Message = error.Message
+                        });
+                        result.FailureCount++;
+                        _logger.LogError("DB Error Row {RowNumber} (ID: {NationalID}): {Message}", row, error.NationalID, error.Message);
+                    }
+
+                    // Success count is total valid sent - total db errors
+                    result.SuccessCount = validLearners.Count - dbErrors.Count;
                 }
+                
+                _logger.LogInformation("Bulk import completed. Success: {Success}, Failed: {Failed}", result.SuccessCount, result.FailureCount);
             }
             catch (Exception ex)
             {
-                result.Errors.Add($"Fatal Error: {ex.Message}");
+                string fatalMsg = $"Fatal Error: {ex.Message}";
+                result.ErrorDetails.Add(new BulkErrorDetail { RowNumber = 0, Message = fatalMsg });
+                _logger.LogCritical(ex, "Fatal error during bulk import.");
             }
 
             return result;
         }
 
-        private LearnerModel ParseLine(string line)
+        private LearnerModel ParseLine(string line, int rowNumber)
         {
-            // Expected CSV Format:
-            // NationalID,FirstName,LastName,DateOfBirth(yyyy-MM-dd),Gender,Email,Phone,SetaName
+            // Expected CSV Format from Google Sheet:
+            // First Name / s, Surname, Date of Birth, Identity Number, Target #, Intervention Name, Period
+            // Index: 0, 1, 2, 3
             var parts = line.Split(',');
 
-            if (parts.Length < 3) throw new Exception("Insufficient columns. Required: NationalID, FirstName, LastName");
+            if (parts.Length < 4) throw new Exception("Insufficient columns. Required: First Name, Surname, Date of Birth, Identity Number");
 
             var learner = new LearnerModel
             {
-                NationalID = parts[0].Trim(),
-                FirstName = parts[1].Trim(),
-                LastName = parts[2].Trim(),
-                IsVerified = false, // Bulk imported, needs verification or assumed verified? Let's say false for now or true if trusted.
-                PopiActConsent = true, // Assumed for bulk uploads from partners
+                FirstName = parts[0].Trim(),
+                LastName = parts[1].Trim(),
+                NationalID = parts[3].Trim(), // Identity Number is at index 3
+                IsVerified = false,
+                PopiActConsent = true,
                 PopiActDate = DateTime.Now
             };
-
-            // Optional fields parsing
-            if (parts.Length > 3 && DateTime.TryParse(parts[3], out DateTime dob))
-                learner.DateOfBirth = dob;
-            
-            if (parts.Length > 4) learner.Gender = parts[4].Trim();
-            if (parts.Length > 5) learner.EmailAddress = parts[5].Trim();
-            if (parts.Length > 6) learner.PhoneNumber = parts[6].Trim();
-            if (parts.Length > 7) learner.SetaName = parts[7].Trim();
 
             // Validate ID (Luhn)
             if (!IsValidLuhn(learner.NationalID))
                 throw new Exception($"Invalid ID Number: {learner.NationalID}");
 
+            // Date Parsing (Format: dd/MM/yy)
+            string dobStr = parts[2].Trim();
+            if (!string.IsNullOrWhiteSpace(dobStr))
+            {
+                // Try specific formats matching the sheet (dd/MM/yy or dd/MM/yyyy)
+                string[] formats = { "dd/MM/yy", "dd/MM/yyyy", "yyyy-MM-dd" };
+                if (DateTime.TryParseExact(dobStr, formats, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime dob))
+                {
+                    learner.DateOfBirth = dob;
+                }
+                else
+                {
+                    // Fallback to generic parse if specific formats fail
+                    if (DateTime.TryParse(dobStr, out dob))
+                        learner.DateOfBirth = dob;
+                    else
+                        throw new Exception($"Invalid Date Format: {dobStr} (Expected dd/MM/yy)");
+                }
+            }
+            
+            // Map optional/extra fields if needed
+            // parts[4] = Target #
+            // parts[5] = Intervention Name -> Could map to a generic field if available, or ignore
+            // parts[6] = Period
+
+            // Default values for fields not in this specific CSV format
+            learner.Gender = "Unknown"; // Not in CSV
+            
             return learner;
+        }
+
+        private bool IsValidEmail(string email)
+        {
+            try {
+                var addr = new System.Net.Mail.MailAddress(email);
+                return addr.Address == email;
+            }
+            catch { return false; }
+        }
+
+        private bool IsValidPhone(string phone)
+        {
+            // Simple check: starts with 0 or +27, contains only digits and spaces, length 10-15
+            return Regex.IsMatch(phone, @"^(\+27|0)[0-9\s]{8,15}$");
         }
 
         private bool IsValidLuhn(string id)
@@ -129,6 +216,15 @@ namespace CrossSetaWeb.Services
     {
         public int SuccessCount { get; set; }
         public int FailureCount { get; set; }
-        public List<string> Errors { get; set; } = new List<string>();
+        public List<BulkErrorDetail> ErrorDetails { get; set; } = new List<BulkErrorDetail>();
+        // Compatibility property if needed, maps details to strings
+        public List<string> Errors => ErrorDetails.Select(e => $"Row {e.RowNumber}: {e.Message}").ToList();
+    }
+
+    public class BulkErrorDetail
+    {
+        public int RowNumber { get; set; }
+        public string NationalID { get; set; }
+        public string Message { get; set; }
     }
 }

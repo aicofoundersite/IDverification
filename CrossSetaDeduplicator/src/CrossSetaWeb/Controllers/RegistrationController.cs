@@ -47,19 +47,43 @@ namespace CrossSetaWeb.Controllers
             {
                 var result = _bulkService.ProcessBulkFile(csvFile);
 
-                if (result.Errors.Count > 0)
-                {
-                    foreach (var error in result.Errors)
-                    {
-                        ModelState.AddModelError("", error);
-                    }
-                }
-
                 if (result.SuccessCount > 0)
                 {
-                    TempData["SuccessMessage"] = $"Bulk Import Complete! {result.SuccessCount} learners registered successfully. {result.FailureCount} failed.";
+                    TempData["SuccessMessage"] = $"Bulk Import Complete! {result.SuccessCount} learners registered successfully.";
                 }
-                else
+
+                if (result.FailureCount > 0)
+                {
+                    // Generate Error Report
+                    string reportFileName = $"BulkErrors_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid()}.csv";
+                    string reportsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "reports");
+                    if (!Directory.Exists(reportsDir)) Directory.CreateDirectory(reportsDir);
+                    
+                    string reportPath = Path.Combine(reportsDir, reportFileName);
+                    
+                    using (var sw = new StreamWriter(reportPath))
+                    {
+                        sw.WriteLine("RowNumber,NationalID,ErrorMessage");
+                        foreach (var error in result.ErrorDetails)
+                        {
+                            sw.WriteLine($"{error.RowNumber},{error.NationalID},\"{error.Message.Replace("\"", "\"\"")}\"");
+                        }
+                    }
+
+                    TempData["ErrorMessage"] = $"{result.FailureCount} records failed. Please download the error report for details.";
+                    TempData["ReportFileName"] = reportFileName;
+                    
+                    // Show top 5 errors in UI
+                    foreach (var error in result.ErrorDetails.Take(5))
+                    {
+                         ModelState.AddModelError("", $"Row {error.RowNumber}: {error.Message}");
+                    }
+                    if (result.FailureCount > 5)
+                    {
+                        ModelState.AddModelError("", $"... and {result.FailureCount - 5} more errors.");
+                    }
+                }
+                else if (result.SuccessCount == 0)
                 {
                     ModelState.AddModelError("", "No records were successfully imported.");
                 }
@@ -71,6 +95,18 @@ namespace CrossSetaWeb.Controllers
                 ModelState.AddModelError("", "Fatal error during import: " + ex.Message);
                 return View();
             }
+        }
+
+        [HttpGet]
+        public IActionResult DownloadReport(string fileName)
+        {
+            if (string.IsNullOrEmpty(fileName)) return BadRequest();
+
+            string path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "reports", fileName);
+            if (!System.IO.File.Exists(path)) return NotFound();
+
+            byte[] fileBytes = System.IO.File.ReadAllBytes(path);
+            return File(fileBytes, "text/csv", fileName);
         }
 
         [HttpGet]

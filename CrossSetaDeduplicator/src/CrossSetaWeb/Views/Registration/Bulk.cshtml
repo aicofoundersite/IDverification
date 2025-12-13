@@ -26,10 +26,24 @@
         <div class="alert alert-success">@TempData["SuccessMessage"]</div>
     }
 
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-warning">
+            @TempData["ErrorMessage"]
+            @if (TempData["ReportFileName"] != null)
+            {
+                <br/>
+                <a href="@Url.Action("DownloadReport", "Registration", new { fileName = TempData["ReportFileName"] })" class="btn btn-warning btn-sm mt-2">
+                    <i class="bi bi-download"></i> Download Error Report
+                </a>
+            }
+        </div>
+    }
+
     @if (!ViewData.ModelState.IsValid)
     {
         <div class="alert alert-danger">
-            <strong>Import Failed:</strong>
+            <strong>Import Issues:</strong>
             @Html.ValidationSummary(false)
         </div>
     }
@@ -48,11 +62,18 @@
 
         <div class="section-header">CSV Format Guidelines</div>
         <div class="alert alert-info">
-            <p>Please ensure your CSV follows this format:</p>
+            <p>Please ensure your CSV follows the exact format of the WRSETA Template (in order):</p>
             <ul>
-                <li><strong>FirstName</strong>, <strong>LastName</strong>, <strong>NationalID</strong>, <strong>DateOfBirth</strong> (YYYY-MM-DD), <strong>Gender</strong>, <strong>MobileNumber</strong></li>
+                <li><strong>First Name / s</strong> (Required)</li>
+                <li><strong>Surname</strong> (Required)</li>
+                <li><strong>Date of Birth</strong> (Required, dd/MM/yy)</li>
+                <li><strong>Identity Number</strong> (Required)</li>
+                <li><strong>Target #</strong> (Optional)</li>
+                <li><strong>Intervention Name</strong> (Optional)</li>
+                <li><strong>Period</strong> (Optional)</li>
             </ul>
-            <p><em>Note: ID numbers will be validated using the Luhn algorithm. Duplicates will be skipped.</em></p>
+            <p>Example: <code>Sange,Gana,10/05/01,0105105408089,11,Bursary,2024/2025</code></p>
+            <p><em>Note: ID numbers will be validated using the Luhn algorithm. Duplicates will be skipped or reported.</em></p>
         </div>
 
         <div class="mt-4">
