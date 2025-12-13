@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using CrossSetaWeb.Services;
 using CrossSetaWeb.DataAccess;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace CrossSetaWeb.Controllers.Api
 {
@@ -9,13 +10,13 @@ namespace CrossSetaWeb.Controllers.Api
     [ApiController]
     public class ImportController : ControllerBase
     {
-        private readonly HomeAffairsImportService _importService;
+        private readonly IHomeAffairsImportService _importService;
+        private readonly IBulkRegistrationService _bulkService;
 
-        public ImportController()
+        public ImportController(IHomeAffairsImportService importService, IBulkRegistrationService bulkService)
         {
-            // Manual injection as per existing pattern
-            var dbHelper = new DatabaseHelper();
-            _importService = new HomeAffairsImportService(dbHelper);
+            _importService = importService;
+            _bulkService = bulkService;
         }
 
         [HttpPost("trigger")]
@@ -38,6 +39,15 @@ namespace CrossSetaWeb.Controllers.Api
             {
                 return BadRequest(new { Message = "Import Failed", Errors = result.Errors });
             }
+        }
+
+        [HttpPost("seed-learners")]
+        public IActionResult SeedLearners()
+        {
+            var webRoot = Directory.GetCurrentDirectory();
+            var path = Path.Combine(webRoot, "wwwroot", "uploads", "LearnerData.csv");
+            _bulkService.SeedLearners(path);
+            return Ok(new { Message = "Learner seeding triggered", Path = path });
         }
     }
 }

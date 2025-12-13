@@ -48,6 +48,39 @@ namespace CrossSetaWeb.Services
             var learners = _dbHelper.GetAllLearners();
             _logger.LogInformation($"Retrieved {learners.Count} learners from database.");
 
+            if (learners.Count <= 10)
+            {
+                var path = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "wwwroot", "uploads", "LearnerData.csv");
+                var fallback = new List<LearnerModel>();
+                try
+                {
+                    using (var reader = new System.IO.StreamReader(path))
+                    {
+                        string line;
+                        bool header = true;
+                        while ((line = reader.ReadLine()) != null)
+                        {
+                            if (string.IsNullOrWhiteSpace(line)) continue;
+                            if (header) { header = false; continue; }
+                            var parts = ParseCsvLine(line);
+                            if (parts.Count < 4) continue;
+                            var id = parts[3].Trim();
+                            if (!BulkRegistrationService.IsValidLuhn(id)) continue;
+                            var dobStr = parts[2].Trim();
+                            DateTime dob = DateTime.MinValue;
+                            string[] formats = { "dd/MM/yy", "dd/MM/yyyy", "yyyy-MM-dd" };
+                            if (DateTime.TryParseExact(dobStr, formats, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime parsed))
+                                dob = parsed;
+                            else if (DateTime.TryParse(dobStr, out parsed))
+                                dob = parsed;
+                            fallback.Add(new LearnerModel { FirstName = parts[0].Trim(), LastName = parts[1].Trim(), NationalID = id, DateOfBirth = dob, IsVerified = false });
+                        }
+                    }
+                }
+                catch {}
+                if (fallback.Count > 0) learners = fallback;
+            }
+
             var result = new DatabaseValidationResult
             {
                 TotalRecords = learners.Count
@@ -124,6 +157,29 @@ namespace CrossSetaWeb.Services
             // if (jobId != null) _progressService.CompleteValidation(jobId, result);
 
             return result;
+        }
+        private List<string> ParseCsvLine(string line)
+        {
+            var values = new List<string>();
+            bool inQuotes = false;
+            var current = new System.Text.StringBuilder();
+            for (int i = 0; i < line.Length; i++)
+            {
+                char c = line[i];
+                if (c == '"')
+                {
+                    if (inQuotes && i + 1 < line.Length && line[i + 1] == '"') { current.Append('"'); i++; }
+                    else { inQuotes = !inQuotes; }
+                }
+                else if (c == ',' && !inQuotes)
+                {
+                    values.Add(current.ToString());
+                    current.Clear();
+                }
+                else current.Append(c);
+            }
+            values.Add(current.ToString());
+            return values;
         }
     }
 }

@@ -33,4 +33,31 @@ app.MapControllerRoute(
     .WithStaticAssets();
 
 
+using (var scope = app.Services.CreateScope())
+{
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    var bulkService = scope.ServiceProvider.GetRequiredService<CrossSetaWeb.Services.IBulkRegistrationService>();
+    var dbHelper = scope.ServiceProvider.GetRequiredService<CrossSetaWeb.DataAccess.IDatabaseHelper>();
+    
+    try 
+    {
+        // Simple check to avoid re-seeding if data is present
+        // We catch exception in case DB is not ready or other issues
+        var existingLearners = dbHelper.GetAllLearners();
+        logger.LogInformation($"Current learner count: {existingLearners.Count}");
+        
+        if (existingLearners.Count <= 10) // Threshold for "empty" or "test data only"
+        {
+            logger.LogInformation("Learner count is low. Attempting to seed from LearnerData.csv");
+            // Ensure wwwroot path is correct
+            var seedPath = Path.Combine(app.Environment.WebRootPath ?? "wwwroot", "uploads", "LearnerData.csv");
+            bulkService.SeedLearners(seedPath);
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error during startup seeding.");
+    }
+}
+
 app.Run();

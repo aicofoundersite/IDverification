@@ -263,7 +263,29 @@ namespace CrossSetaWeb.DataAccess
                         }
                         else
                         {
-                            errors.Add(new BulkInsertError { NationalID = learner.NationalID, Message = $"Database Error: {ex.Message}", IsDuplicate = false });
+                            try
+                            {
+                                using (SqlCommand cmd2 = new SqlCommand("INSERT INTO Learners (NationalID, FirstName, LastName, DateOfBirth, Gender, Role, BiometricHash, IsVerified, SetaName) VALUES (@NationalID, @FirstName, @LastName, @DateOfBirth, @Gender, @Role, @BiometricHash, @IsVerified, @SetaName)", conn))
+                                {
+                                    cmd2.Parameters.AddWithValue("@NationalID", GetValue(learner.NationalID));
+                                    cmd2.Parameters.AddWithValue("@FirstName", GetValue(learner.FirstName));
+                                    cmd2.Parameters.AddWithValue("@LastName", GetValue(learner.LastName));
+                                    cmd2.Parameters.AddWithValue("@DateOfBirth", learner.DateOfBirth == DateTime.MinValue ? (object)DBNull.Value : learner.DateOfBirth);
+                                    cmd2.Parameters.AddWithValue("@Gender", GetValue(string.IsNullOrEmpty(learner.Gender) ? "Unknown" : learner.Gender));
+                                    cmd2.Parameters.AddWithValue("@Role", GetValue(string.IsNullOrEmpty(learner.Role) ? "Learner" : learner.Role));
+                                    cmd2.Parameters.AddWithValue("@BiometricHash", GetValue(learner.BiometricHash));
+                                    cmd2.Parameters.AddWithValue("@IsVerified", learner.IsVerified);
+                                    cmd2.Parameters.AddWithValue("@SetaName", GetValue(string.IsNullOrEmpty(learner.SetaName) ? "BulkImport" : learner.SetaName));
+                                    cmd2.ExecuteNonQuery();
+                                }
+                            }
+                            catch (SqlException ex2)
+                            {
+                                if (ex2.Number == 2627 || ex2.Number == 2601)
+                                    errors.Add(new BulkInsertError { NationalID = learner.NationalID, Message = "Duplicate Record", IsDuplicate = true });
+                                else
+                                    errors.Add(new BulkInsertError { NationalID = learner.NationalID, Message = $"Database Error: {ex2.Message}", IsDuplicate = false });
+                            }
                         }
                     }
                     catch (Exception ex)

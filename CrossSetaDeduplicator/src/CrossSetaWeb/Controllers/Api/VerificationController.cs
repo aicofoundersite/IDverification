@@ -105,5 +105,12 @@ namespace CrossSetaWeb.Controllers.Api
                 message = "Not found in Home Affairs Database" 
             });
         }
+
+        [HttpGet("count")]
+        public IActionResult Count()
+        {
+            var learners = _dbHelper.GetAllLearners();
+            return Ok(new { count = learners.Count });
+        }
     }
 }

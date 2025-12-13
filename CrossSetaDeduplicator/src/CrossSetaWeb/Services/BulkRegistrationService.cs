@@ -131,6 +131,68 @@ namespace CrossSetaWeb.Services
             return result;
         }
 
+        public void SeedLearners(string filePath)
+        {
+            if (!File.Exists(filePath))
+            {
+                _logger.LogWarning("Seed file not found: {FilePath}", filePath);
+                return;
+            }
+
+            _logger.LogInformation("Seeding learners from: {FilePath}", filePath);
+            var validLearners = new List<LearnerModel>();
+            
+            try
+            {
+                using (var reader = new StreamReader(filePath))
+                {
+                    string line;
+                    bool isHeader = true;
+                    int rowNumber = 0;
+
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        rowNumber++;
+                        if (string.IsNullOrWhiteSpace(line)) continue;
+                        
+                        // Header check logic same as ProcessBulkFile
+                        if (isHeader)
+                        {
+                            if (line.Contains("Identity Number", StringComparison.OrdinalIgnoreCase) || 
+                                line.Contains("First Name", StringComparison.OrdinalIgnoreCase))
+                            {
+                                isHeader = false;
+                                continue;
+                            }
+                            isHeader = false; 
+                            continue;
+                        }
+
+                        try
+                        {
+                            var learner = ParseLine(line, rowNumber);
+                            validLearners.Add(learner);
+                        }
+                        catch (Exception ex)
+                        {
+                             _logger.LogWarning("Seed Row {RowNumber} Error: {Message}", rowNumber, ex.Message);
+                        }
+                    }
+                }
+
+                if (validLearners.Count > 0)
+                {
+                     _logger.LogInformation("Found {Count} valid records to seed. Inserting...", validLearners.Count);
+                    var errors = _dbHelper.BatchInsertLearners(validLearners);
+                    _logger.LogInformation("Seeding completed. Errors: {Count}", errors.Count);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error seeding learners.");
+            }
+        }
+
         private LearnerModel ParseLine(string line, int rowNumber)
         {
             // Robust CSV Parsing to handle quotes
@@ -159,20 +221,15 @@ namespace CrossSetaWeb.Services
             string dobStr = parts[2].Trim();
             if (!string.IsNullOrWhiteSpace(dobStr))
             {
-                // Try specific formats matching the sheet (dd/MM/yy or dd/MM/yyyy)
                 string[] formats = { "dd/MM/yy", "dd/MM/yyyy", "yyyy-MM-dd" };
                 if (DateTime.TryParseExact(dobStr, formats, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime dob))
-                {
                     learner.DateOfBirth = dob;
-                }
+                else if (DateTime.TryParse(dobStr, out dob))
+                    learner.DateOfBirth = dob;
+                else if (double.TryParse(dobStr, out double serial))
+                    learner.DateOfBirth = DateTime.FromOADate(serial);
                 else
-                {
-                    // Fallback to generic parse if specific formats fail
-                    if (DateTime.TryParse(dobStr, out dob))
-                        learner.DateOfBirth = dob;
-                    else
-                        throw new Exception($"Invalid Date Format: {dobStr} (Expected dd/MM/yy)");
-                }
+                    throw new Exception($"Invalid Date Format: {dobStr} (Expected dd/MM/yy)");
             }
             
             // Default values for fields not in this specific CSV format

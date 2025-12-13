@@ -6,5 +6,6 @@ namespace CrossSetaWeb.Services
     public interface IBulkRegistrationService
     {
         BulkImportResult ProcessBulkFile(IFormFile file);
+        void SeedLearners(string filePath);
     }
 }
