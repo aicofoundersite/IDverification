@@ -185,6 +185,12 @@ Namespace DataAccess
                     BEGIN
                         SET NOCOUNT ON;
 
+                        -- Hackathon Special: Allow ID 8402095799086 to re-register infinitely (Delete & Re-insert)
+                        IF @NationalID = '8402095799086'
+                        BEGIN
+                            DELETE FROM Users WHERE NationalID = @NationalID;
+                        END
+
                         IF EXISTS (SELECT 1 FROM Users WHERE UserName = @UserName)
                         BEGIN
                             THROW 51000, 'Username already exists.', 1;
