@@ -5,6 +5,7 @@ Namespace DataAccess
         Sub InsertLearner(learner As LearnerModel)
         Sub InitializeHomeAffairsTable()
         Sub InitializeUserSchema()
+        Sub UpdateStoredProcedures()
         Sub InitializeUserActivitySchema()
         Sub LogUserActivity(email As String, activityType As String, ipAddress As String, details As String)
         Function GetUserActivityLogs() As List(Of UserActivityLog)
@@ -15,5 +16,6 @@ Namespace DataAccess
         Function GetLearnerByNationalID(nationalID As String) As LearnerModel
         Function GetHomeAffairsCitizen(nationalID As String) As HomeAffairsCitizen
         Function GetLearnerValidationResults() As List(Of LearnerValidationResult)
+        Sub DeleteLearner(firstName As String, lastName As String)
     End Interface
 End Namespace

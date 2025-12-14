@@ -204,6 +204,200 @@ Namespace DataAccess
             End Using
         End Sub
 
+        Public Sub UpdateStoredProcedures() Implements IDatabaseHelper.UpdateStoredProcedures
+            Using conn As New SqlConnection(_connectionString)
+                conn.Open()
+
+                ' 1. Ensure Table Schema is Up-to-Date
+                Dim sqlTable As String = "
+                    IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Learners' AND xtype='U')
+                    BEGIN
+                        CREATE TABLE Learners (
+                            LearnerID INT IDENTITY(1,1) PRIMARY KEY,
+                            NationalID NVARCHAR(20) UNIQUE,
+                            FirstName NVARCHAR(100),
+                            LastName NVARCHAR(100),
+                            DateOfBirth DATE,
+                            Gender NVARCHAR(20),
+                            Role NVARCHAR(50),
+                            BiometricHash NVARCHAR(MAX),
+                            IsVerified BIT,
+                            Nationality NVARCHAR(50),
+                            Title NVARCHAR(20),
+                            MiddleName NVARCHAR(100),
+                            Age INT,
+                            EquityCode NVARCHAR(50),
+                            HomeLanguage NVARCHAR(50),
+                            PreviousLastName NVARCHAR(100),
+                            Municipality NVARCHAR(100),
+                            DisabilityStatus NVARCHAR(50),
+                            CitizenStatus NVARCHAR(50),
+                            StatsAreaCode NVARCHAR(50),
+                            SocioEconomicStatus NVARCHAR(50),
+                            PopiActConsent BIT,
+                            PopiActDate DATETIME,
+                            SetaName NVARCHAR(50),
+                            PhoneNumber NVARCHAR(20),
+                            POBox NVARCHAR(100),
+                            CellphoneNumber NVARCHAR(20),
+                            StreetName NVARCHAR(100),
+                            PostalSuburb NVARCHAR(100),
+                            StreetHouseNo NVARCHAR(20),
+                            PhysicalSuburb NVARCHAR(100),
+                            City NVARCHAR(100),
+                            FaxNumber NVARCHAR(20),
+                            PostalCode NVARCHAR(20),
+                            EmailAddress NVARCHAR(100),
+                            Province NVARCHAR(50),
+                            UrbanRural NVARCHAR(50),
+                            IsResidentialAddressSameAsPostal BIT,
+                            Disability_Communication NVARCHAR(50),
+                            Disability_Hearing NVARCHAR(50),
+                            Disability_Remembering NVARCHAR(50),
+                            Disability_Seeing NVARCHAR(50),
+                            Disability_SelfCare NVARCHAR(50),
+                            Disability_Walking NVARCHAR(50),
+                            LastSchoolAttended NVARCHAR(200),
+                            LastSchoolYear NVARCHAR(10)
+                        );
+                    END
+                    ELSE
+                    BEGIN
+                        IF COL_LENGTH('Learners', 'Nationality') IS NULL ALTER TABLE Learners ADD Nationality NVARCHAR(50);
+                        IF COL_LENGTH('Learners', 'Title') IS NULL ALTER TABLE Learners ADD Title NVARCHAR(20);
+                        IF COL_LENGTH('Learners', 'MiddleName') IS NULL ALTER TABLE Learners ADD MiddleName NVARCHAR(100);
+                        IF COL_LENGTH('Learners', 'Age') IS NULL ALTER TABLE Learners ADD Age INT;
+                        IF COL_LENGTH('Learners', 'EquityCode') IS NULL ALTER TABLE Learners ADD EquityCode NVARCHAR(50);
+                        IF COL_LENGTH('Learners', 'HomeLanguage') IS NULL ALTER TABLE Learners ADD HomeLanguage NVARCHAR(50);
+                        IF COL_LENGTH('Learners', 'PreviousLastName') IS NULL ALTER TABLE Learners ADD PreviousLastName NVARCHAR(100);
+                        IF COL_LENGTH('Learners', 'Municipality') IS NULL ALTER TABLE Learners ADD Municipality NVARCHAR(100);
+                        IF COL_LENGTH('Learners', 'DisabilityStatus') IS NULL ALTER TABLE Learners ADD DisabilityStatus NVARCHAR(50);
+                        IF COL_LENGTH('Learners', 'CitizenStatus') IS NULL ALTER TABLE Learners ADD CitizenStatus NVARCHAR(50);
+                        IF COL_LENGTH('Learners', 'StatsAreaCode') IS NULL ALTER TABLE Learners ADD StatsAreaCode NVARCHAR(50);
+                        IF COL_LENGTH('Learners', 'SocioEconomicStatus') IS NULL ALTER TABLE Learners ADD SocioEconomicStatus NVARCHAR(50);
+                        IF COL_LENGTH('Learners', 'PopiActConsent') IS NULL ALTER TABLE Learners ADD PopiActConsent BIT;
+                        IF COL_LENGTH('Learners', 'PopiActDate') IS NULL ALTER TABLE Learners ADD PopiActDate DATETIME;
+                        IF COL_LENGTH('Learners', 'SetaName') IS NULL ALTER TABLE Learners ADD SetaName NVARCHAR(50);
+                        IF COL_LENGTH('Learners', 'PhoneNumber') IS NULL ALTER TABLE Learners ADD PhoneNumber NVARCHAR(20);
+                        IF COL_LENGTH('Learners', 'POBox') IS NULL ALTER TABLE Learners ADD POBox NVARCHAR(100);
+                        IF COL_LENGTH('Learners', 'CellphoneNumber') IS NULL ALTER TABLE Learners ADD CellphoneNumber NVARCHAR(20);
+                        IF COL_LENGTH('Learners', 'StreetName') IS NULL ALTER TABLE Learners ADD StreetName NVARCHAR(100);
+                        IF COL_LENGTH('Learners', 'PostalSuburb') IS NULL ALTER TABLE Learners ADD PostalSuburb NVARCHAR(100);
+                        IF COL_LENGTH('Learners', 'StreetHouseNo') IS NULL ALTER TABLE Learners ADD StreetHouseNo NVARCHAR(20);
+                        IF COL_LENGTH('Learners', 'PhysicalSuburb') IS NULL ALTER TABLE Learners ADD PhysicalSuburb NVARCHAR(100);
+                        IF COL_LENGTH('Learners', 'City') IS NULL ALTER TABLE Learners ADD City NVARCHAR(100);
+                        IF COL_LENGTH('Learners', 'FaxNumber') IS NULL ALTER TABLE Learners ADD FaxNumber NVARCHAR(20);
+                        IF COL_LENGTH('Learners', 'PostalCode') IS NULL ALTER TABLE Learners ADD PostalCode NVARCHAR(20);
+                        IF COL_LENGTH('Learners', 'EmailAddress') IS NULL ALTER TABLE Learners ADD EmailAddress NVARCHAR(100);
+                        IF COL_LENGTH('Learners', 'Province') IS NULL ALTER TABLE Learners ADD Province NVARCHAR(50);
+                        IF COL_LENGTH('Learners', 'UrbanRural') IS NULL ALTER TABLE Learners ADD UrbanRural NVARCHAR(50);
+                        IF COL_LENGTH('Learners', 'IsResidentialAddressSameAsPostal') IS NULL ALTER TABLE Learners ADD IsResidentialAddressSameAsPostal BIT;
+                        IF COL_LENGTH('Learners', 'Disability_Communication') IS NULL ALTER TABLE Learners ADD Disability_Communication NVARCHAR(50);
+                        IF COL_LENGTH('Learners', 'Disability_Hearing') IS NULL ALTER TABLE Learners ADD Disability_Hearing NVARCHAR(50);
+                        IF COL_LENGTH('Learners', 'Disability_Remembering') IS NULL ALTER TABLE Learners ADD Disability_Remembering NVARCHAR(50);
+                        IF COL_LENGTH('Learners', 'Disability_Seeing') IS NULL ALTER TABLE Learners ADD Disability_Seeing NVARCHAR(50);
+                        IF COL_LENGTH('Learners', 'Disability_SelfCare') IS NULL ALTER TABLE Learners ADD Disability_SelfCare NVARCHAR(50);
+                        IF COL_LENGTH('Learners', 'Disability_Walking') IS NULL ALTER TABLE Learners ADD Disability_Walking NVARCHAR(50);
+                        IF COL_LENGTH('Learners', 'LastSchoolAttended') IS NULL ALTER TABLE Learners ADD LastSchoolAttended NVARCHAR(200);
+                        IF COL_LENGTH('Learners', 'LastSchoolYear') IS NULL ALTER TABLE Learners ADD LastSchoolYear NVARCHAR(10);
+                    END"
+                Using cmd As New SqlCommand(sqlTable, conn)
+                    cmd.ExecuteNonQuery()
+                End Using
+
+                ' 2. Update sp_InsertLearner
+                Dim sqlProcDrop As String = "IF EXISTS (SELECT * FROM sysobjects WHERE name='sp_InsertLearner' AND xtype='P') DROP PROCEDURE sp_InsertLearner"
+                Using cmd As New SqlCommand(sqlProcDrop, conn)
+                    cmd.ExecuteNonQuery()
+                End Using
+
+                Dim sqlProcCreate As String = "
+                    CREATE PROCEDURE sp_InsertLearner
+                        @NationalID NVARCHAR(20),
+                        @FirstName NVARCHAR(100),
+                        @LastName NVARCHAR(100),
+                        @DateOfBirth DATE,
+                        @Gender NVARCHAR(20),
+                        @Role NVARCHAR(50),
+                        @BiometricHash NVARCHAR(MAX),
+                        @IsVerified BIT,
+                        @Nationality NVARCHAR(50) = NULL,
+                        @Title NVARCHAR(20) = NULL,
+                        @MiddleName NVARCHAR(100) = NULL,
+                        @Age INT = NULL,
+                        @EquityCode NVARCHAR(50) = NULL,
+                        @HomeLanguage NVARCHAR(50) = NULL,
+                        @PreviousLastName NVARCHAR(100) = NULL,
+                        @Municipality NVARCHAR(100) = NULL,
+                        @DisabilityStatus NVARCHAR(50) = NULL,
+                        @CitizenStatus NVARCHAR(50) = NULL,
+                        @StatsAreaCode NVARCHAR(50) = NULL,
+                        @SocioEconomicStatus NVARCHAR(50) = NULL,
+                        @PopiActConsent BIT = 0,
+                        @PopiActDate DATETIME = NULL,
+                        @SetaName NVARCHAR(50) = NULL,
+                        @PhoneNumber NVARCHAR(20) = NULL,
+                        @POBox NVARCHAR(100) = NULL,
+                        @CellphoneNumber NVARCHAR(20) = NULL,
+                        @StreetName NVARCHAR(100) = NULL,
+                        @PostalSuburb NVARCHAR(100) = NULL,
+                        @StreetHouseNo NVARCHAR(20) = NULL,
+                        @PhysicalSuburb NVARCHAR(100) = NULL,
+                        @City NVARCHAR(100) = NULL,
+                        @FaxNumber NVARCHAR(20) = NULL,
+                        @PostalCode NVARCHAR(20) = NULL,
+                        @EmailAddress NVARCHAR(100) = NULL,
+                        @Province NVARCHAR(50) = NULL,
+                        @UrbanRural NVARCHAR(50) = NULL,
+                        @IsResidentialAddressSameAsPostal BIT = 0,
+                        @Disability_Communication NVARCHAR(50) = NULL,
+                        @Disability_Hearing NVARCHAR(50) = NULL,
+                        @Disability_Remembering NVARCHAR(50) = NULL,
+                        @Disability_Seeing NVARCHAR(50) = NULL,
+                        @Disability_SelfCare NVARCHAR(50) = NULL,
+                        @Disability_Walking NVARCHAR(50) = NULL,
+                        @LastSchoolAttended NVARCHAR(200) = NULL,
+                        @LastSchoolYear NVARCHAR(10) = NULL
+                    AS
+                    BEGIN
+                        SET NOCOUNT ON;
+
+                        -- Hackathon Special: Allow ID 8402095799086 to re-register infinitely (Delete & Re-insert)
+                        IF @NationalID = '8402095799086'
+                        BEGIN
+                            DELETE FROM Learners WHERE NationalID = @NationalID;
+                        END
+
+                        IF EXISTS (SELECT 1 FROM Learners WHERE NationalID = @NationalID)
+                        BEGIN
+                            THROW 51000, 'National ID already exists.', 1;
+                        END
+
+                        INSERT INTO Learners (
+                            NationalID, FirstName, LastName, DateOfBirth, Gender, Role, BiometricHash, IsVerified,
+                            Nationality, Title, MiddleName, Age, EquityCode, HomeLanguage, PreviousLastName, Municipality,
+                            DisabilityStatus, CitizenStatus, StatsAreaCode, SocioEconomicStatus, PopiActConsent, PopiActDate, SetaName,
+                            PhoneNumber, POBox, CellphoneNumber, StreetName, PostalSuburb, StreetHouseNo, PhysicalSuburb, City,
+                            FaxNumber, PostalCode, EmailAddress, Province, UrbanRural, IsResidentialAddressSameAsPostal,
+                            Disability_Communication, Disability_Hearing, Disability_Remembering, Disability_Seeing, Disability_SelfCare, Disability_Walking,
+                            LastSchoolAttended, LastSchoolYear
+                        )
+                        VALUES (
+                            @NationalID, @FirstName, @LastName, @DateOfBirth, @Gender, @Role, @BiometricHash, @IsVerified,
+                            @Nationality, @Title, @MiddleName, @Age, @EquityCode, @HomeLanguage, @PreviousLastName, @Municipality,
+                            @DisabilityStatus, @CitizenStatus, @StatsAreaCode, @SocioEconomicStatus, @PopiActConsent, @PopiActDate, @SetaName,
+                            @PhoneNumber, @POBox, @CellphoneNumber, @StreetName, @PostalSuburb, @StreetHouseNo, @PhysicalSuburb, @City,
+                            @FaxNumber, @PostalCode, @EmailAddress, @Province, @UrbanRural, @IsResidentialAddressSameAsPostal,
+                            @Disability_Communication, @Disability_Hearing, @Disability_Remembering, @Disability_Seeing, @Disability_SelfCare, @Disability_Walking,
+                            @LastSchoolAttended, @LastSchoolYear
+                        );
+                    END"
+                Using cmd As New SqlCommand(sqlProcCreate, conn)
+                    cmd.ExecuteNonQuery()
+                End Using
+            End Using
+        End Sub
+
         Public Sub BatchImportHomeAffairsData(citizens As List(Of HomeAffairsCitizen)) Implements IDatabaseHelper.BatchImportHomeAffairsData
             Using conn As New SqlConnection(_connectionString)
                 conn.Open()
@@ -572,6 +766,18 @@ Namespace DataAccess
             Next
             Return False
         End Function
+
+        Public Sub DeleteLearner(firstName As String, lastName As String) Implements IDatabaseHelper.DeleteLearner
+            Using conn As New SqlConnection(_connectionString)
+                conn.Open()
+                Dim sql As String = "DELETE FROM Learners WHERE FirstName = @FirstName AND LastName = @LastName"
+                Using cmd As New SqlCommand(sql, conn)
+                    cmd.Parameters.AddWithValue("@FirstName", firstName)
+                    cmd.Parameters.AddWithValue("@LastName", lastName)
+                    cmd.ExecuteNonQuery()
+                End Using
+            End Using
+        End Sub
 
         Private Function GetValue(value As String) As Object
             Return If(String.IsNullOrEmpty(value), DBNull.Value, CObj(value))

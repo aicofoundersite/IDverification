@@ -63,6 +63,7 @@ using (var scope = app.Services.CreateScope())
     {
         // Ensure Users table and SP exist
         dbHelper.InitializeUserSchema();
+        dbHelper.UpdateStoredProcedures();
         dbHelper.InitializeUserActivitySchema();
 
         // Simple check to avoid re-seeding if data is present

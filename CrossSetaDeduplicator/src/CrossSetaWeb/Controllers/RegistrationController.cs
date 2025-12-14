@@ -39,6 +39,25 @@ namespace CrossSetaWeb.Controllers
         }
 
         [HttpGet]
+        public IActionResult DeleteLearner(string firstName, string lastName)
+        {
+            if (string.IsNullOrEmpty(firstName) || string.IsNullOrEmpty(lastName))
+            {
+                return Content("Please provide firstName and lastName");
+            }
+            
+            try 
+            {
+                _dbHelper.DeleteLearner(firstName, lastName);
+                return Content($"Successfully deleted learner: {firstName} {lastName}");
+            }
+            catch (Exception ex)
+            {
+                return Content($"Error: {ex.Message}");
+            }
+        }
+
+        [HttpGet]
         [Authorize]
         public IActionResult Bulk()
         {
