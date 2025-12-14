@@ -10,17 +10,18 @@ RUN apt-get update && \
     apt-get install -y nodejs
 
 WORKDIR /src
-COPY ["CrossSetaWeb.csproj", "."]
-RUN dotnet restore "CrossSetaWeb.csproj"
+COPY ["src/CrossSetaWeb/CrossSetaWeb.csproj", "src/CrossSetaWeb/"]
+COPY ["src/CrossSetaWeb/CrossSetaLogic/CrossSetaLogic.vbproj", "src/CrossSetaWeb/CrossSetaLogic/"]
+RUN dotnet restore "src/CrossSetaWeb/CrossSetaWeb.csproj"
 COPY . .
 
 # Build React App
-WORKDIR "/src/ClientApp"
+WORKDIR "/src/src/CrossSetaWeb/ClientApp"
 RUN npm install
 RUN npm run build
 
 # Build .NET App
-WORKDIR "/src"
+WORKDIR "/src/src/CrossSetaWeb"
 RUN dotnet build "CrossSetaWeb.csproj" -c Release -o /app/build
 
 FROM build AS publish

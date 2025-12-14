@@ -6,11 +6,12 @@
     <div class="row">
         <div class="col-md-3">
             <nav id="doc-nav" class="nav flex-column sticky-top" style="top: 80px;">
-                <a class="nav-link text-success fw-bold" href="#core-requirements">Core Requirements</a>
+                <a class="nav-link text-success fw-bold" href="#demo-data">Demo Data (Start Here)</a>
+                <a class="nav-link text-secondary" href="#core-requirements">Core Requirements</a>
                 <a class="nav-link text-secondary" href="#bonus-features">Bonus Features</a>
                 <a class="nav-link text-secondary" href="#architecture">Architecture</a>
                 <a class="nav-link text-secondary" href="#verification-logic">Traffic Light Logic</a>
-                <a class="nav-link text-secondary" href="#demo-data">Demo Data</a>
+                <a class="nav-link text-secondary" href="#advanced-security">Advanced Security & KYC</a>
                 <a class="nav-link text-secondary" href="#security">Security & Compliance</a>
                 <a class="nav-link text-secondary" href="#reporting">Reporting</a>
             </nav>
@@ -19,40 +20,132 @@
         <div class="col-md-9">
             <h1 class="display-4 mb-4 text-success border-bottom pb-2">Cross-SETA Deduplication System</h1>
             
+            <div class="alert alert-secondary shadow-sm d-flex align-items-center justify-content-between mb-5">
+                <div>
+                    <i class="bi bi-github fs-4 me-2"></i>
+                    <span class="fs-5 fw-bold">Source Code</span>
+                    <span class="ms-2">View the full source code, commit history, and technical documentation on GitHub.</span>
+                </div>
+                <a href="https://github.com/aicofoundersite/IDverification" target="_blank" class="btn btn-dark">
+                    <i class="bi bi-github"></i> View Repository
+                </a>
+            </div>
+
+            <section id="demo-data" class="mb-5">
+                <h2 class="text-primary border-bottom pb-2"><i class="bi bi-play-circle-fill"></i> Testing Scenarios & Demo IDs</h2>
+                <div class="alert alert-info shadow-sm">
+                    <strong><i class="bi bi-info-circle-fill"></i> For Hackathon Judges:</strong> Use these specific National ID numbers to simulate the full range of "Traffic Light" verification responses (Green, Yellow, Red) without needing real citizen data.
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th style="width: 20%;">Scenario</th>
+                                <th style="width: 15%;">Status</th>
+                                <th style="width: 20%;">National ID</th>
+                                <th style="width: 15%;">Input Surname</th>
+                                <th>Expected Result & Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Valid Citizen</strong></td>
+                                <td><span class="badge bg-success rounded-pill px-3 py-2">Green</span></td>
+                                <td><code>0002080806082</code></td>
+                                <td><code>Makaula</code></td>
+                                <td>
+                                    <strong>Verification Successful</strong><br/>
+                                    <small class="text-muted">Perfect match. ID exists, Citizen is Alive, Surname matches.</small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Surname Mismatch</strong></td>
+                                <td><span class="badge bg-warning text-dark rounded-pill px-3 py-2">Yellow</span></td>
+                                <td><code>0002080806082</code></td>
+                                <td><code>Smith</code></td>
+                                <td>
+                                    <strong>Flagged for Review</strong><br/>
+                                    <small class="text-muted">ID is valid and Citizen is Alive, but surname does not match official record (e.g., Marriage/Typo).</small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Deceased Citizen</strong></td>
+                                <td><span class="badge bg-danger rounded-pill px-3 py-2">Red</span></td>
+                                <td><code>0001010000001</code></td>
+                                <td><em>Any</em></td>
+                                <td>
+                                    <strong>Blocked (Deceased)</strong><br/>
+                                    <small class="text-muted">ID exists but Citizen is marked as Deceased. Immediate fraud prevention block.</small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>ID Not Found</strong></td>
+                                <td><span class="badge bg-danger rounded-pill px-3 py-2">Red</span></td>
+                                <td><code>9999999999999</code></td>
+                                <td><em>Any</em></td>
+                                <td>
+                                    <strong>Blocked (Not Found)</strong><br/>
+                                    <small class="text-muted">ID number does not exist in Home Affairs database. Likely fake or invalid.</small>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
             <section id="core-requirements" class="mb-5">
                 <h2 class="text-primary"><i class="bi bi-check-circle-fill"></i> Core Requirements (Must-Haves)</h2>
-                <div class="card mb-3 shadow-sm">
+                <div class="card mb-3 shadow-sm border-start border-4 border-primary">
                     <div class="card-body">
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item">
-                                <strong>Input Validation:</strong> Strict validation for South African ID numbers (Luhn Algorithm), Name, and Surname formats.
-                            </li>
-                            <li class="list-group-item">
-                                <strong>Real-Time Verification:</strong> Instant connection to external data sources (Simulated Home Affairs) to verify identity.
-                            </li>
-                            <li class="list-group-item">
-                                <strong>Audit Trail:</strong> Comprehensive logging of every single verification attempt, including user, timestamp, and result.
-                            </li>
-                        </ul>
+                        <div class="mb-3">
+                            <h5 class="card-title fw-bold">1. Input Validation</h5>
+                            <p class="card-text">
+                                Strict validation of South African ID numbers using the <strong>Luhn Algorithm</strong> ensures that only structurally valid IDs are processed.
+                                Regex-based validation for Name and Surname formats prevents garbage data entry.
+                            </p>
+                        </div>
+                        <div class="mb-3">
+                            <h5 class="card-title fw-bold">2. Real-Time Verification</h5>
+                            <p class="card-text">
+                                The system connects instantly to a simulated external data source (Department of Home Affairs) to verify citizen identity, "Alive/Deceased" status, and surname consistency in real-time.
+                            </p>
+                        </div>
+                        <div>
+                            <h5 class="card-title fw-bold">3. Audit Trail</h5>
+                            <p class="card-text">
+                                <strong>Full Accountability:</strong> Every single verification attempt is logged with the User, Timestamp, Input Data (masked), Result Status, and Error Messages.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </section>
 
             <section id="bonus-features" class="mb-5">
                 <h2 class="text-info"><i class="bi bi-star-fill"></i> Bonus Points for Innovation</h2>
-                <div class="card mb-3 shadow-sm">
+                <div class="card mb-3 shadow-sm border-start border-4 border-info">
                     <div class="card-body">
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item">
-                                <strong>Offline Capability:</strong> Queueing and retry logic for verifications during system downtimes.
-                            </li>
-                            <li class="list-group-item">
-                                <strong>User Experience (UX):</strong> Intuitive "Traffic Light" status badges (Green/Yellow/Red) for immediate visual feedback.
-                            </li>
-                            <li class="list-group-item">
-                                <strong>Security:</strong> Full POPIA compliance with PII masking and secure data handling.
-                            </li>
-                        </ul>
+                        <div class="mb-3">
+                            <h5 class="card-title fw-bold">1. Offline Capability</h5>
+                            <p class="card-text">
+                                <strong>Resilience:</strong> Implements queueing and retry logic. When external systems are down, requests are queued locally and automatically processed once connectivity is restored.
+                            </p>
+                        </div>
+                        <div class="mb-3">
+                            <h5 class="card-title fw-bold">2. User Experience (UX)</h5>
+                            <p class="card-text">
+                                <strong>"Traffic Light" Logic:</strong> Uses distinct visual cues (Green/Yellow/Red badges) to communicate verification status instantly to operators.
+                                Error messages are designed to be human-readable and actionable.
+                            </p>
+                        </div>
+                        <div>
+                            <h5 class="card-title fw-bold">3. Advanced Security & KYC</h5>
+                            <p class="card-text">
+                                <strong>POPIA Compliance:</strong> PII is masked in administrative views.
+                                <strong>KYC Data:</strong> Captures extended data (Address, Socio-Economic Status) for FICA compliance.
+                                <strong>Biometrics:</strong> Database ready for biometric hash storage (Fingerprint/Face).
+                            </p>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -60,11 +153,29 @@
             <section id="architecture" class="mb-5">
                 <h2>1. Architecture Expectations</h2>
                 <p>The system implements a modular <strong>N-Tier structure</strong> to ensure separation of concerns:</p>
-                <ul>
-                    <li><strong>Frontend (Presentation):</strong> ASP.NET Core MVC (C#) handling UI and user interaction.</li>
-                    <li><strong>Logic (Business):</strong> VB.NET Class Library (`CrossSetaLogic`) encapsulating all validation and business rules.</li>
-                    <li><strong>Data (Persistence):</strong> SQL Server accessed via ADO.NET/EF Core with parameterized queries.</li>
-                </ul>
+                <div class="list-group">
+                    <a href="#" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">Frontend (Presentation)</h5>
+                            <small class="text-muted">C# ASP.NET Core MVC</small>
+                        </div>
+                        <p class="mb-1">Handles UI rendering, user interaction, and acts as the API gateway.</p>
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">Logic (Business)</h5>
+                            <small class="text-muted">VB.NET Class Library</small>
+                        </div>
+                        <p class="mb-1">Encapsulates all validation rules, business logic, and the "Traffic Light" protocol. Demonstrates multi-language interoperability.</p>
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">Data (Persistence)</h5>
+                            <small class="text-muted">SQL Server</small>
+                        </div>
+                        <p class="mb-1">Manages efficient data persistence using parameterized queries to prevent SQL injection.</p>
+                    </a>
+                </div>
             </section>
 
             <section id="verification-logic" class="mb-5">
@@ -72,28 +183,31 @@
                 <p>We apply the Interceptor Pattern to categorize verification results:</p>
                 <div class="row text-center">
                     <div class="col-md-4">
-                        <div class="card bg-success text-white mb-3">
-                            <div class="card-body">
+                        <div class="card bg-success text-white mb-3 h-100">
+                            <div class="card-body d-flex flex-column justify-content-center">
+                                <h3 class="display-6"><i class="bi bi-check-circle"></i></h3>
                                 <h3>Green</h3>
-                                <p><strong>Verified</strong></p>
+                                <p class="fw-bold">Verified</p>
                                 <small>ID exists, Names match, Citizen is Alive.</small>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card bg-warning text-dark mb-3">
-                            <div class="card-body">
+                        <div class="card bg-warning text-dark mb-3 h-100">
+                            <div class="card-body d-flex flex-column justify-content-center">
+                                <h3 class="display-6"><i class="bi bi-exclamation-triangle"></i></h3>
                                 <h3>Yellow</h3>
-                                <p><strong>Review</strong></p>
+                                <p class="fw-bold">Review</p>
                                 <small>Surname Mismatch or minor discrepancy.</small>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card bg-danger text-white mb-3">
-                            <div class="card-body">
+                        <div class="card bg-danger text-white mb-3 h-100">
+                            <div class="card-body d-flex flex-column justify-content-center">
+                                <h3 class="display-6"><i class="bi bi-x-circle"></i></h3>
                                 <h3>Red</h3>
-                                <p><strong>Invalid/Fraud</strong></p>
+                                <p class="fw-bold">Invalid/Fraud</p>
                                 <small>ID Not Found, Deceased, or Invalid Format.</small>
                             </div>
                         </div>
@@ -101,79 +215,92 @@
                 </div>
             </section>
 
-            <section id="duplicate-checks" class="mb-5">
-                <h2>3. Duplicate Learner Check Rules</h2>
-                <p>A <strong>Pre-Registration Check</strong> is performed before committing any data to the local W&RSETA database. If a learner exists in another SETA's records, the registration is flagged.</p>
-            </section>
+            <section id="advanced-security" class="mb-5">
+                <h2 class="text-primary"><i class="bi bi-shield-check"></i> Advanced Security & KYC</h2>
+                <p class="lead">The system goes beyond basic ID checks to support full FICA/SETA compliance and future-proof biometric integration.</p>
 
-            <section id="tech-stack" class="mb-5">
-                <h2>4. Technology Options</h2>
-                <p><strong>Language:</strong> VB.NET (Logic) & C# (Web) - Demonstrating interoperability.</p>
-                <p><strong>Database:</strong> Microsoft SQL Server.</p>
-            </section>
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-file-earmark-person-fill text-primary"></i> 1. KYC Verification (Know Your Customer)</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>To comply with FICA and SETA regulations, the system captures and validates comprehensive personal information beyond just the ID number.</p>
+                        <ul>
+                            <li><strong>Data Points:</strong> Physical Address, Contact Details, Socio-Economic Status, Disability Status, and Equity Code.</li>
+                            <li><strong>Purpose:</strong> Ensures that the "Learner" entity is a fully verifiable legal person with a traceable footprint.</li>
+                        </ul>
+                        <div class="alert alert-secondary d-flex align-items-center">
+                            <i class="bi bi-code-square fs-4 me-3"></i>
+                            <div>
+                                <strong>Code Reference:</strong><br/>
+                                <a href="https://github.com/aicofoundersite/IDverification/blob/main/CrossSetaDeduplicator/src/CrossSetaWeb/CrossSetaLogic/DataAccess/DatabaseHelper.vb" target="_blank" class="text-decoration-none">
+                                    View <code>InsertLearner</code> logic in DatabaseHelper.vb <i class="bi bi-box-arrow-up-right small"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-            <section id="demo-data" class="mb-5">
-                <h2 class="text-primary border-bottom pb-2">Testing Scenarios & Demo IDs</h2>
-                <p>Use these IDs to test the specific "Traffic Light" scenarios in the Bulk Registration or Single Registration forms.</p>
-                
-                <table class="table table-bordered table-hover">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Scenario</th>
-                            <th>Status</th>
-                            <th>National ID</th>
-                            <th>Surname Input</th>
-                            <th>Expected Result</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong>Valid Citizen</strong></td>
-                            <td><span class="badge bg-success">Green</span></td>
-                            <td><code>0002080806082</code></td>
-                            <td><code>Makaula</code></td>
-                            <td>Verification Successful.</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Surname Mismatch</strong></td>
-                            <td><span class="badge bg-warning text-dark">Yellow</span></td>
-                            <td><code>0002080806082</code></td>
-                            <td><code>Smith</code></td>
-                            <td>Flagged for Review (Surname does not match Home Affairs).</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Deceased Citizen</strong></td>
-                            <td><span class="badge bg-danger">Red</span></td>
-                            <td><code>0001010000001</code></td>
-                            <td><em>Any</em></td>
-                            <td>Blocked. Citizen marked as Deceased.</td>
-                        </tr>
-                        <tr>
-                            <td><strong>ID Not Found</strong></td>
-                            <td><span class="badge bg-danger">Red</span></td>
-                            <td><code>9999999999999</code></td>
-                            <td><em>Any</em></td>
-                            <td>Blocked. Identity Number not found in source.</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="card mb-3 shadow-sm">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-fingerprint text-success"></i> 2. Biometric Capabilities</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>The system is architected for the immediate future integration of biometric scanners (Fingerprint/Facial Recognition).</p>
+                        <ul>
+                            <li><strong>Biometric Hashing:</strong> The database schema and application logic include a dedicated <code>BiometricHash</code> field.</li>
+                            <li><strong>Security:</strong> Biometric templates are stored as secure one-way hashes, ensuring that raw biometric data is never exposed, even in the event of a database breach.</li>
+                        </ul>
+                        <div class="alert alert-secondary d-flex align-items-center">
+                            <i class="bi bi-code-square fs-4 me-3"></i>
+                            <div>
+                                <strong>Code Reference:</strong><br/>
+                                <a href="https://github.com/aicofoundersite/IDverification/blob/main/CrossSetaDeduplicator/src/CrossSetaWeb/CrossSetaLogic/Models/LearnerModel.vb" target="_blank" class="text-decoration-none d-block mb-1">
+                                    View <code>BiometricHash</code> field in LearnerModel.vb <i class="bi bi-box-arrow-up-right small"></i>
+                                </a>
+                                <a href="https://github.com/aicofoundersite/IDverification/blob/main/CrossSetaDeduplicator/src/CrossSetaWeb/CrossSetaLogic/DataAccess/DatabaseHelper.vb" target="_blank" class="text-decoration-none">
+                                    View Database persistence in DatabaseHelper.vb <i class="bi bi-box-arrow-up-right small"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <section id="security" class="mb-5">
                 <h2>8. Security & Compliance</h2>
-                <ul>
-                    <li><strong>POPIA Compliance:</strong> PII is masked in admin views.</li>
-                    <li><strong>Secure Config:</strong> No hardcoded API keys; credentials managed via Environment Variables.</li>
-                    <li><strong>Input Sanitization:</strong> All inputs sanitized to prevent SQL Injection and XSS.</li>
-                </ul>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header bg-dark text-white">Security Measures</div>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item"><i class="bi bi-shield-lock-fill text-success"></i> <strong>POPIA Compliance:</strong> PII masking in admin views.</li>
+                                <li class="list-group-item"><i class="bi bi-key-fill text-success"></i> <strong>No Hardcoded Secrets:</strong> Environment variables used for all config.</li>
+                                <li class="list-group-item"><i class="bi bi-code-slash text-success"></i> <strong>Input Sanitization:</strong> Prevention of SQL Injection & XSS.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header bg-dark text-white">Tech Stack</div>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item"><strong>Frontend:</strong> ASP.NET Core MVC (Razor) + Bootstrap 5</li>
+                                <li class="list-group-item"><strong>Backend:</strong> C# .NET 8.0 (Web) + VB.NET (Logic)</li>
+                                <li class="list-group-item"><strong>Database:</strong> Microsoft SQL Server (Containerized)</li>
+                                <li class="list-group-item"><strong>Deployment:</strong> Docker + Fly.io</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <section id="reporting" class="mb-5">
                 <h2>9. Reporting Requirements</h2>
-                <p>The <strong>Administrative Dashboard</strong> visualizes:</p>
+                <p>The <strong>Administrative Dashboard</strong> provides actionable insights:</p>
                 <ul>
-                    <li>Total Verifications vs. Failures.</li>
-                    <li>Exportable lists of "Blocked" or "Flagged" attempts for audit purposes.</li>
+                    <li>Visualizes total verification attempts vs. failures.</li>
+                    <li>Exports detailed lists of "Blocked" or "Flagged" attempts for audit and forensic purposes.</li>
+                    <li>Tracks duplicate attempts to identify potential fraud patterns.</li>
                 </ul>
             </section>
         </div>

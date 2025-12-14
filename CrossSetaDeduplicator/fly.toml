@@ -1,0 +1,16 @@
+app = "cross-seta-web-17655"
+primary_region = "jnb"
+
+[build]
+  dockerfile = "src/CrossSetaWeb/Dockerfile"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  size = "shared-cpu-1x"

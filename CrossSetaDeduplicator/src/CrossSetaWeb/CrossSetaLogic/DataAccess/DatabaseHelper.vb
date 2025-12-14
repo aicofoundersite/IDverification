@@ -42,7 +42,11 @@ Namespace DataAccess
                 cmd.Parameters.AddWithValue("@NationalID", GetValue(learner.NationalID))
                 cmd.Parameters.AddWithValue("@FirstName", GetValue(learner.FirstName))
                 cmd.Parameters.AddWithValue("@LastName", GetValue(learner.LastName))
-                cmd.Parameters.AddWithValue("@DateOfBirth", learner.DateOfBirth)
+                
+                ' Explicitly use SqlDbType.Date for DateOfBirth to support full range (0001-9999)
+                ' AddWithValue defaults to SqlDbType.DateTime which only supports 1753+
+                cmd.Parameters.Add("@DateOfBirth", SqlDbType.Date).Value = learner.DateOfBirth
+
                 cmd.Parameters.AddWithValue("@Gender", GetValue(learner.Gender))
                 cmd.Parameters.AddWithValue("@Role", If(String.IsNullOrEmpty(learner.Role), "Learner", learner.Role))
                 cmd.Parameters.AddWithValue("@BiometricHash", GetValue(learner.BiometricHash))
@@ -63,7 +67,13 @@ Namespace DataAccess
                 cmd.Parameters.AddWithValue("@StatsAreaCode", GetValue(learner.StatsAreaCode))
                 cmd.Parameters.AddWithValue("@SocioEconomicStatus", GetValue(learner.SocioEconomicStatus))
                 cmd.Parameters.AddWithValue("@PopiActConsent", learner.PopiActConsent)
-                cmd.Parameters.AddWithValue("@PopiActDate", If(learner.PopiActDate = DateTime.MinValue, DBNull.Value, CObj(learner.PopiActDate)))
+                
+                ' PopiActDate is DATETIME in SQL (1753+), unlike DateOfBirth which is DATE (0001+)
+                Dim popiVal As Object = DBNull.Value
+                If learner.PopiActDate >= New DateTime(1753, 1, 1) Then
+                    popiVal = learner.PopiActDate
+                End If
+                cmd.Parameters.AddWithValue("@PopiActDate", popiVal)
 
                 ' Contact Details
                 cmd.Parameters.AddWithValue("@PhoneNumber", GetValue(learner.PhoneNumber))
